@@ -182,12 +182,13 @@ addressInput.addEventListener('input', function () {
           .join(' ');
 
         const city =
-          p.city ||
-          p.town ||
-          p.village ||
-          p.locality ||
-          p.district ||
-          '';
+    p.city ||
+    p.town ||
+    p.village ||
+    p.locality ||
+    p.municipality ||
+    p.suburb ||
+    '';
 
         const state = p.state || '';
         const postcode = p.postcode || '';
