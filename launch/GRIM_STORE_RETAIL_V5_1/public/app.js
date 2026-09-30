@@ -48,4 +48,158 @@ function closeHelp(){E('helpModal')?.classList.remove('open')}
 if(E('helpForm'))E('helpForm').onsubmit=async e=>{e.preventDefault();let r=await fetch('/api/support',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic:E('helpTopic').value,name:E('hName').value,email:E('hEmail').value,order:E('hOrder').value,message:E('hMessage').value})}),j=await r.json();E('hMsg').textContent=r.ok?`MESSAGE RECEIVED — SUPPORT #${j.ticketId}`:(j.error||'Please try again.');if(r.ok)E('helpForm').reset()};
 if(E('newsForm'))E('newsForm').onsubmit=async e=>{e.preventDefault();let r=await fetch('/api/newsletter',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:E('newsEmail').value})}),j=await r.json();E('newsMsg').textContent=r.ok?'WELCOME TO THE HOUSE.':(j.error||'Please try again.');if(r.ok)E('newsForm').reset()};
 
-function scrollToShop(){document.querySelector('.shop')?.scrollIntoView({behavior:'smooth',block:'start'})}
+function scrollToShop(){document.querySelector('.shop')?.scrollIntoView({behavior:'smooth',block:'start'})}// ===== GRIM CHECKOUT V2 =====
+function buildGrimCheckout(){
+  const box=document.querySelector('#checkout .checkout-box');
+  if(!box)return;
+
+  box.innerHTML=`
+    <button class="x" onclick="closeCheckout()">×</button>
+    <span class="eyebrow">SECURE CHECKOUT</span>
+    <h2>CHECKOUT</h2>
+
+    <div style="display:flex;gap:8px;margin:15px 0 25px;font-size:12px">
+      <b>1 BAG</b> → <b>2 DELIVERY</b> → <b>3 PAYMENT</b>
+    </div>
+
+    <form id="grimCheckoutForm">
+
+      <h3>CONTACT</h3>
+      <input id="coEmail" type="email" required placeholder="Email address">
+      <input id="coPhone" type="tel" required placeholder="Phone number">
+
+      <h3>DELIVERY ADDRESS</h3>
+
+      <select id="coCountry" required>
+        <option value="NG">Nigeria</option>
+        <option value="US">United States</option>
+        <option value="GB">United Kingdom</option>
+        <option value="CA">Canada</option>
+        <option value="GH">Ghana</option>
+        <option value="ZA">South Africa</option>
+        <option value="KE">Kenya</option>
+        <option value="AE">United Arab Emirates</option>
+      </select>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <input id="coFirst" required placeholder="First name">
+        <input id="coLast" required placeholder="Last name">
+      </div>
+
+      <input id="coAddress" required placeholder="Street address">
+      <input id="coApartment" placeholder="Apartment, suite, etc. (optional)">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <input id="coCity" required placeholder="City">
+        <input id="coState" required placeholder="State / Province">
+      </div>
+
+      <input id="coPostal" placeholder="Postal / ZIP code">
+      <textarea id="coInstructions"
+        placeholder="Delivery instructions (optional)"></textarea>
+
+      <h3>DELIVERY METHOD</h3>
+
+      <label style="display:block;border:1px solid #bbb;padding:16px;margin:10px 0">
+        <input type="radio" name="delivery" value="standard" checked>
+        <b> Standard Delivery</b><br>
+        <small>Delivery cost will be calculated for your destination.</small>
+      </label>
+
+      <button class="dark full" type="submit">
+        CONTINUE TO PAYMENT
+      </button>
+
+      <p id="checkoutMessage"></p>
+    </form>
+
+    <div id="paymentStep" style="display:none">
+      <h3>PAYMENT</h3>
+      <p class="muted">Choose how you would like to pay.</p>
+
+      <button class="dark full" id="payCard" type="button">
+        💳 PAY WITH CARD
+      </button>
+
+      <button class="dark full" id="payTransfer"
+        type="button" style="margin-top:12px">
+        🏦 PAY BY BANK TRANSFER
+      </button>
+
+      <button type="button" id="backDelivery"
+        style="margin-top:18px">
+        ← BACK TO DELIVERY
+      </button>
+
+      <p id="paymentMessage"></p>
+    </div>
+  `;
+
+  const country=E('coCountry');
+  if(market?.country && [...country.options].some(o=>o.value===market.country)){
+    country.value=market.country;
+  }
+
+  function paymentAvailability(){
+    const transfer=E('payTransfer');
+    if(transfer){
+      transfer.style.display=
+        country.value==='NG' ? 'block' : 'none';
+    }
+  }
+
+  paymentAvailability();
+  country.addEventListener('change',paymentAvailability);
+
+  E('grimCheckoutForm').onsubmit=e=>{
+    e.preventDefault();
+
+    E('grimCheckoutForm').style.display='none';
+    E('paymentStep').style.display='block';
+
+    paymentAvailability();
+
+    box.scrollTop=0;
+  };
+
+  E('backDelivery').onclick=()=>{
+    E('paymentStep').style.display='none';
+    E('grimCheckoutForm').style.display='block';
+  };
+
+  E('payCard').onclick=()=>{
+    E('paymentMessage').textContent=
+      'Preparing secure card payment…';
+    startGrimPayment('card');
+  };
+
+  E('payTransfer').onclick=()=>{
+    E('paymentMessage').textContent=
+      'Preparing secure bank transfer…';
+    startGrimPayment('bank_transfer');
+  };
+}
+
+function startGrimPayment(method){
+  window.grimPendingPayment={
+    method,
+    email:E('coEmail').value,
+    phone:E('coPhone').value,
+    name:`${E('coFirst').value} ${E('coLast').value}`,
+    address:[
+      E('coAddress').value,
+      E('coApartment').value,
+      E('coCity').value,
+      E('coState').value,
+      E('coPostal').value
+    ].filter(Boolean).join(', '),
+    country:E('coCountry').value,
+    items:cart,
+    total:cart.reduce((sum,item)=>sum+(item.price*item.qty),0)
+  };
+
+  E('paymentMessage').textContent=
+    'Payment gateway connection is the next setup step.';
+}
+
+buildGrimCheckout();
