@@ -15,10 +15,13 @@ const __dirname=path.dirname(fileURLToPath(import.meta.url));
 const app=express();
 // Render terminates HTTPS at its proxy. Trust the first proxy so secure session cookies work in production.
 app.set("trust proxy",1);
-const dataDir=process.env.DATA_DIR || path.join(__dirname,"..");
-const uploadDir=path.join(dataDir,"uploads");
-fs.mkdirSync(uploadDir,{recursive:true});
-const db=new Database(path.join(dataDir,"grim.db"));
+const dataDir = process.env.DATA_DIR || "/tmp/grim";
+fs.mkdirSync(dataDir, { recursive: true });
+
+const uploadDir = path.join(dataDir, "uploads");
+fs.mkdirSync(uploadDir, { recursive: true });
+
+const db = new Database(path.join(dataDir, "grim.db"));
 
 app.use(express.json({limit:"1mb"}));
 app.use(express.urlencoded({extended:true}));
