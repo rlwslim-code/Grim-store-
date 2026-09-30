@@ -209,17 +209,65 @@ addressInput.addEventListener('input', function () {
         option.style.borderBottom = '1px solid #ddd';
         option.style.background = '#fff';
 
-        option.addEventListener('click', () => {
-          addressInput.value = street || p.name || query;
+  option.addEventListener('click', async () => {
+  addressInput.value = street || p.name || query;
 
-          if (E('coCity')) E('coCity').value = city;
-          if (E('coState')) E('coState').value = state;
-          if (E('coPostal')) E('coPostal').value = postcode;
+  let finalCity = city;
+  let finalState = state;
+  let finalPostcode = postcode;
 
-          suggestions.innerHTML = '';
-          suggestions.style.display = 'none';
-        });
+  // If Photon search didn't return complete address details,
+  // use the selected result's coordinates to reverse-geocode it.
+  try {
+    const coords = feature.geometry?.coordinates;
 
+    if (coords && coords.length >= 2) {
+      const lon = coords[0];
+      const lat = coords[1];
+
+      const reverseURL =
+        'https://photon.komoot.io/reverse?lon=' +
+        encodeURIComponent(lon) +
+        '&lat=' +
+        encodeURIComponent(lat);
+
+      const reverseResponse = await fetch(reverseURL);
+
+      if (reverseResponse.ok) {
+        const reverseData = await reverseResponse.json();
+        const rp = reverseData.features?.[0]?.properties || {};
+
+        finalCity =
+          finalCity ||
+          rp.city ||
+          rp.town ||
+          rp.village ||
+          rp.locality ||
+          rp.district ||
+          '';
+
+        finalState =
+          finalState ||
+          rp.state ||
+          '';
+
+        finalPostcode =
+          finalPostcode ||
+          rp.postcode ||
+          '';
+      }
+    }
+  } catch (error) {
+    console.error('GRIM reverse address lookup failed:', error);
+  }
+
+  if (E('coCity')) E('coCity').value = finalCity;
+  if (E('coState')) E('coState').value = finalState;
+  if (E('coPostal')) E('coPostal').value = finalPostcode;
+
+  suggestions.innerHTML = '';
+  suggestions.style.display = 'none';
+});
         suggestions.appendChild(option);
       });
 
