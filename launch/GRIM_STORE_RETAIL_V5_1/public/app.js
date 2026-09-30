@@ -88,6 +88,7 @@ function buildGrimCheckout(){
       </div>
 
       <input id="coAddress" required placeholder="Street address">
+      <div id="addressSuggestions"></div>
       <input id="coApartment" placeholder="Apartment, suite, etc. (optional)">
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -136,6 +137,99 @@ function buildGrimCheckout(){
     </div>
   `;
 
+
+const addressInput = E('coAddress');
+const suggestions = E('addressSuggestions');
+let addressTimer;
+
+addressInput.addEventListener('input', function () {
+  clearTimeout(addressTimer);
+
+  const query = this.value.trim();
+  if (query.length < 3) {
+    suggestions.innerHTML = '';
+    suggestions.style.display = 'none';
+    return;
+  }
+
+  addressTimer = setTimeout(async () => {
+    try {
+      const countryCode = E('coCountry')?.value || '';
+
+      const url =
+        'https://photon.komoot.io/api/?q=' +
+        encodeURIComponent(query) +
+        '&limit=5' +
+        (countryCode ? '&countrycode=' + encodeURIComponent(countryCode) : '');
+
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Address search failed');
+
+      const data = await response.json();
+
+      suggestions.innerHTML = '';
+
+      if (!data.features || !data.features.length) {
+        suggestions.style.display = 'none';
+        return;
+      }
+
+      data.features.forEach(feature => {
+        const p = feature.properties || {};
+
+        const street = [p.housenumber, p.street || p.name]
+          .filter(Boolean)
+          .join(' ');
+
+        const city =
+          p.city ||
+          p.town ||
+          p.village ||
+          p.locality ||
+          p.district ||
+          '';
+
+        const state = p.state || '';
+        const postcode = p.postcode || '';
+
+        const label = [
+          street,
+          city,
+          state,
+          postcode,
+          p.country
+        ].filter(Boolean).join(', ');
+
+        const option = document.createElement('div');
+        option.textContent = label;
+
+        option.style.padding = '14px';
+        option.style.cursor = 'pointer';
+        option.style.borderBottom = '1px solid #ddd';
+        option.style.background = '#fff';
+
+        option.addEventListener('click', () => {
+          addressInput.value = street || p.name || query;
+
+          if (E('coCity')) E('coCity').value = city;
+          if (E('coState')) E('coState').value = state;
+          if (E('coPostal')) E('coPostal').value = postcode;
+
+          suggestions.innerHTML = '';
+          suggestions.style.display = 'none';
+        });
+
+        suggestions.appendChild(option);
+      });
+
+      suggestions.style.display = 'block';
+
+    } catch (error) {
+      console.error('GRIM address search:', error);
+      suggestions.style.display = 'none';
+    }
+  }, 400);
+});  
   const country=E('coCountry');
   if(market?.country && [...country.options].some(o=>o.value===market.country)){
     country.value=market.country;
