@@ -260,7 +260,31 @@ addressInput.addEventListener('input', function () {
   } catch (error) {
     console.error('GRIM reverse address lookup failed:', error);
   }
+// GRIM ZIP fallback - fills city/state when Photon leaves them blank
+if (!finalCity && finalPostcode) {
+  try {
+    const selectedCountry = E('coCountry')?.value || '';
 
+    if (selectedCountry === 'US') {
+      const zipResponse = await fetch(
+        'https://api.zippopotam.us/us/' +
+        encodeURIComponent(finalPostcode)
+      );
+
+      if (zipResponse.ok) {
+        const zipData = await zipResponse.json();
+        const place = zipData.places?.[0];
+
+        if (place) {
+          finalCity = place['place name'] || finalCity;
+          finalState = place['state'] || finalState;
+        }
+      }
+    }
+  } catch (error) {
+    console.error('GRIM ZIP lookup failed:', error);
+  }
+}
   if (E('coCity')) E('coCity').value = finalCity;
   if (E('coState')) E('coState').value = finalState;
   if (E('coPostal')) E('coPostal').value = finalPostcode;
