@@ -1,7 +1,7 @@
 const SUPABASE_URL = 'https://ulogfaggaetywdqohunm.supabase.co';
 
 // Paste your sb_publishable_... key between the quotes:
-const SUPABASE_KEY = 'sb_publishable_riL_7aIgsg-W4nb7YzJoeA_HwaYI2bK';
+const SUPABASE_KEY = 'sb_publishable_r1L_7aIgsg-W4nb7YzJoeA_HwaYI2bK';
 
 let supabase;
 
