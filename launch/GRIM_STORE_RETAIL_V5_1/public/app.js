@@ -48,7 +48,8 @@ function closeHelp(){E('helpModal')?.classList.remove('open')}
 if(E('helpForm'))E('helpForm').onsubmit=async e=>{e.preventDefault();let r=await fetch('/api/support',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic:E('helpTopic').value,name:E('hName').value,email:E('hEmail').value,order:E('hOrder').value,message:E('hMessage').value})}),j=await r.json();E('hMsg').textContent=r.ok?`MESSAGE RECEIVED — SUPPORT #${j.ticketId}`:(j.error||'Please try again.');if(r.ok)E('helpForm').reset()};
 if(E('newsForm'))E('newsForm').onsubmit=async e=>{e.preventDefault();let r=await fetch('/api/newsletter',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:E('newsEmail').value})}),j=await r.json();E('newsMsg').textContent=r.ok?'WELCOME TO THE HOUSE.':(j.error||'Please try again.');if(r.ok)E('newsForm').reset()};
 
-function scrollToShop(){document.querySelector('.shop')?.scrollIntoView({behavior:'smooth',block:'start'})}// ===== GRIM CHECKOUT V2 =====
+function scrollToShop(){document.querySelector('.shop')?.scrollIntoView({behavior:'smooth',block:'start'})}
+ // ===== GRIM CHECKOUT V2 =====
 function buildGrimCheckout(){
   const box=document.querySelector('#checkout .checkout-box');
   if(!box)return;
