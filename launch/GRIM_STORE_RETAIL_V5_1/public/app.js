@@ -437,9 +437,6 @@ function startGrimPayment(method) {
     }
 },
 
-      console.log('GRIM payment:', transaction);
-    },
-
     onCancel: () => {
       E('paymentMessage').textContent =
         'Payment cancelled. You can try again.';
