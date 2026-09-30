@@ -54,6 +54,67 @@ app.post("/api/register",async(q,s)=>{let{name,email,password}=q.body||{};if(!na
 app.post("/api/login",async(q,s)=>{let{email,password}=q.body||{},u=db.prepare("SELECT * FROM users WHERE email=?").get((email||"").toLowerCase());if(!u||!await bcrypt.compare(password||"",u.password_hash))return s.status(401).json({error:"Incorrect email or password."});q.session.user={id:u.id,name:u.name,email:u.email};s.json(q.session.user)});
 
 async function notify(o){if(!process.env.SMTP_HOST||!process.env.STORE_OWNER_EMAIL)return;let t=nodemailer.createTransport({host:process.env.SMTP_HOST,port:+(process.env.SMTP_PORT||587),secure:process.env.SMTP_SECURE==="true",auth:{user:process.env.SMTP_USER,pass:process.env.SMTP_PASS}}),lines=o.items.map(x=>`${x.name} / ${x.color} / Size ${x.size||"M"} / Qty ${x.qty} / ₦${(x.price*x.qty).toLocaleString()}`).join("\n");await t.sendMail({from:process.env.SMTP_FROM||process.env.SMTP_USER,to:process.env.STORE_OWNER_EMAIL,subject:`NEW GRIM ORDER #${o.id}`,text:`Customer: ${o.name}\nEmail: ${o.email}\nPhone: ${o.phone}\nAddress: ${o.address}\n\n${lines}\n\nTOTAL ₦${o.total.toLocaleString()}`})}
+app.post("/api/payments/verify", async (req, res) => {
+  try {
+    const reference = String(req.body?.reference || "").trim();
+
+    if (!reference) {
+      return res.status(400).json({
+        ok: false,
+        verified: false,
+        error: "Payment reference is required"
+      });
+    }
+
+    if (!process.env.PAYSTACK_SECRET_KEY) {
+      return res.status(500).json({
+        ok: false,
+        verified: false,
+        error: "Payment verification is not configured"
+      });
+    }
+
+    const response = await fetch(
+      `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`
+        }
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok || !result.status) {
+      return res.status(400).json({
+        ok: false,
+        verified: false,
+        error: result.message || "Payment verification failed"
+      });
+    }
+
+    const verified = result.data?.status === "success";
+
+    return res.json({
+      ok: true,
+      verified,
+      reference: result.data?.reference,
+      amount: result.data?.amount,
+      currency: result.data?.currency,
+      status: result.data?.status
+    });
+
+  } catch (error) {
+    console.error("Paystack verification error:", error);
+
+    return res.status(500).json({
+      ok: false,
+      verified: false,
+      error: "Unable to verify payment"
+    });
+  }
+});
 app.post("/api/orders",async(q,s)=>{let{name,email,phone,address,items,country,currency}=q.body||{};if(!name||!email||!phone||!address||!items?.length)return s.status(400).json({error:"Complete checkout details."});let clean=[],total=0;for(let x of items){let p=productById(+x.id),qty=Math.max(1,Math.min(10,+x.qty||1));if(p&&p.active){clean.push({...p,qty,size:String(x.size||"M").slice(0,4)});total+=p.price*qty}}if(!clean.length)return s.status(400).json({error:"Your cart has no available products."});let r=db.prepare("INSERT INTO orders(user_id,name,email,phone,address,items_json,total) VALUES(?,?,?,?,?,?,?)").run(q.session.user?.id||null,name,email,phone,address,JSON.stringify(clean),total),o={id:+r.lastInsertRowid,name,email,phone,address,items:clean,total};try{await notify(o)}catch(e){console.error(e)}s.json({ok:true,orderId:o.id,total,country:country||"NG",currency:currency||"NGN"})});
 app.post("/api/support",async(q,s)=>{let{topic,name,email,order,message}=q.body||{};if(!topic||!name||!email||!message)return s.status(400).json({error:"Complete the required fields."});let r=db.prepare("INSERT INTO support_tickets(topic,name,email,order_ref,message) VALUES(?,?,?,?,?)").run(String(topic).slice(0,80),String(name).slice(0,100),String(email).slice(0,160),String(order||"").slice(0,50),String(message).slice(0,3000));if(process.env.SMTP_HOST&&process.env.STORE_OWNER_EMAIL){try{let t=nodemailer.createTransport({host:process.env.SMTP_HOST,port:+(process.env.SMTP_PORT||587),secure:process.env.SMTP_SECURE==="true",auth:{user:process.env.SMTP_USER,pass:process.env.SMTP_PASS}});await t.sendMail({from:process.env.SMTP_FROM||process.env.SMTP_USER,to:process.env.STORE_OWNER_EMAIL,replyTo:email,subject:`GRIM CUSTOMER CARE #${r.lastInsertRowid} — ${topic}`,text:`Name: ${name}\nEmail: ${email}\nOrder: ${order||"N/A"}\nTopic: ${topic}\n\n${message}`})}catch(e){console.error(e)}}s.json({ok:true,ticketId:r.lastInsertRowid})});
 app.post("/api/newsletter",(q,s)=>{let email=String(q.body?.email||"").trim().toLowerCase();if(!email||!email.includes("@"))return s.status(400).json({error:"Enter a valid email."});try{db.prepare("INSERT INTO newsletter(email) VALUES(?)").run(email)}catch(e){}s.json({ok:true})});
