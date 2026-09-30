@@ -398,9 +398,44 @@ function startGrimPayment(method) {
       ]
     },
 
-    onSuccess: (transaction) => {
-      E('paymentMessage').textContent =
-        'Payment received. Reference: ' + transaction.reference;
+    onSuccess: async (transaction) => {
+    E('paymentMessage').textContent = 'Verifying payment...';
+
+    try {
+        const response = await fetch(
+            'https://rlwslim-code-github-io.vercel.app/api/payments/verify',
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    reference: transaction.reference
+                })
+            }
+        );
+
+        const result = await response.json();
+
+        if (response.ok && result.verified) {
+            E('paymentMessage').textContent =
+                'Payment verified ✓ Reference: ' + transaction.reference;
+
+            console.log('GRIM verified payment:', result);
+        } else {
+            E('paymentMessage').textContent =
+                'Payment could not be verified. Please contact GRIM support.';
+
+            console.error('Verification failed:', result);
+        }
+
+    } catch (error) {
+        E('paymentMessage').textContent =
+            'Payment verification error. Please contact GRIM support.';
+
+        console.error('Verification error:', error);
+    }
+},
 
       console.log('GRIM payment:', transaction);
     },
