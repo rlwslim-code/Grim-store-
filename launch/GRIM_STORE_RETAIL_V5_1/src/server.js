@@ -13,6 +13,26 @@ dotenv.config();
 
 const __dirname=path.dirname(fileURLToPath(import.meta.url));
 const app=express();
+app.use((req, res, next) => {
+  res.setHeader(
+    "Access-Control-Allow-Origin",
+    "https://rlwslim-code.github.io"
+  );
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, DELETE, OPTIONS"
+  );
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type"
+  );
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+
+  next();
+});
 // Render terminates HTTPS at its proxy. Trust the first proxy so secure session cookies work in production.
 app.set("trust proxy",1);
 const dataDir = process.env.DATA_DIR || "/tmp/grim";
