@@ -348,26 +348,75 @@ if (!finalCity && finalPostcode) {
   };
 }
 
-function startGrimPayment(method){pk_test_47ed513350eebc36692a4ac655b27ce883e974bf
-  window.grimPendingPayment={
-    method,
-    email:E('coEmail').value,
-    phone:E('coPhone').value,
-    name:`${E('coFirst').value} ${E('coLast').value}`,
-    address:[
-      E('coAddress').value,
-      E('coApartment').value,
-      E('coCity').value,
-      E('coState').value,
-      E('coPostal').value
-    ].filter(Boolean).join(', '),
-    country:E('coCountry').value,
-    items:cart,
-    total:cart.reduce((sum,item)=>sum+(item.price*item.qty),0)
-  };
+function startGrimPayment(method) {
+  const email = E('coEmail').value.trim();
+  const firstName = E('coFirst').value.trim();
+  const lastName = E('coLast').value.trim();
+  const phone = E('coPhone').value.trim();
 
-  E('paymentMessage').textContent=
-    'Payment gateway connection is the next setup step.';
+  const total = cart.reduce(
+    (sum, item) => sum + (item.price * item.qty),
+    0
+  );
+
+  if (!email) {
+    E('paymentMessage').textContent =
+      'Please enter your email address before payment.';
+    return;
+  }
+
+  if (total <= 0) {
+    E('paymentMessage').textContent =
+      'Your bag is empty.';
+    return;
+  }
+
+  const popup = new PaystackPop();
+
+  popup.newTransaction({
+    key: 'pk_test_47ed513350eebc36692a4ac655b27ce883e974bf',
+    email: email,
+    amount: Math.round(total * 100),
+    currency: 'NGN',
+
+    firstName: firstName,
+    lastName: lastName,
+    phone: phone,
+
+    channels:
+      method === 'bank_transfer'
+        ? ['bank_transfer']
+        : ['card'],
+
+    metadata: {
+      custom_fields: [
+        {
+          display_name: 'GRIM Customer',
+          variable_name: 'grim_customer',
+          value: `${firstName} ${lastName}`.trim()
+        }
+      ]
+    },
+
+    onSuccess: (transaction) => {
+      E('paymentMessage').textContent =
+        'Payment received. Reference: ' + transaction.reference;
+
+      console.log('GRIM payment:', transaction);
+    },
+
+    onCancel: () => {
+      E('paymentMessage').textContent =
+        'Payment cancelled. You can try again.';
+    },
+
+    onError: (error) => {
+      console.error('Paystack error:', error);
+
+      E('paymentMessage').textContent =
+        'Payment could not start. Please try again.';
+    }
+  });
 }
 
 buildGrimCheckout();
