@@ -145,8 +145,7 @@ const countryOptions = selected => Object.entries(COUNTRY_DIALS)
 
   function enhanceCheckout() {
     enhanceCheckoutPhone();
-    pausePaymentsForFrontendStage();
-  }
+     }
 
   const originalBuildCheckout = typeof window.buildGrimCheckout === 'function'
     ? window.buildGrimCheckout
