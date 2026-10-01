@@ -40,7 +40,15 @@ function openBag(){E('bag')?.classList.add('open')}function closeBag(){E('bag')?
 
   E('bag')?.classList.remove('open');
 
-  buildGrimCheckout();
+  if(!E('grimCheckoutForm')){
+    buildGrimCheckout();
+  }
+
+  const form = E('grimCheckoutForm');
+  const payment = E('paymentStep');
+
+  if(form) form.style.display = 'block';
+  if(payment) payment.style.display = 'none';
 
   E('checkout')?.classList.add('open');
 }
