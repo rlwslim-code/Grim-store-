@@ -157,7 +157,38 @@ const countryOptions = selected => Object.entries(COUNTRY_DIALS)
       enhanceCheckout();
     };
   }
+     // ===== GRIM LIVE SESSION HEARTBEAT =====
+async function sendGrimHeartbeat() {
+  try {
+    await fetch('/api/session/heartbeat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include',
+      keepalive: true,
+      body: JSON.stringify({
+        path: window.location.pathname + window.location.search
+      })
+    });
+  } catch (_) {
+    // Tracking must never interrupt the customer experience.
+  }
+}
 
+sendGrimHeartbeat();
+
+setInterval(() => {
+  if (document.visibilityState === 'visible') {
+    sendGrimHeartbeat();
+  }
+}, 60000);
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    sendGrimHeartbeat();
+  }
+});
   // app.js builds checkout once at load, so enhance that copy too.
   enhanceCheckout();
 
