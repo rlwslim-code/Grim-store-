@@ -374,7 +374,7 @@ function startGrimPayment(method) {
   const popup = new PaystackPop();
 
   popup.newTransaction({
-    key: 'pk_test_47ed513350eebc36692a4ac655b27ce883e974bf',
+    key: 'pk_live_c4fc8a994bea77b16ffffe9c2372c94a393ce7e3',
     email: email,
     amount: Math.round(total * 100),
     currency: 'NGN',
