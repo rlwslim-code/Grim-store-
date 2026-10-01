@@ -21,3 +21,4 @@ Purpose:
 
 IMPORTANT:
 Do not reconnect Paystack, Supabase keys, or Google OAuth until this frontend version is tested on GitHub Pages and Vercel.
+Vercel fresh build marker: 20261001-1501
