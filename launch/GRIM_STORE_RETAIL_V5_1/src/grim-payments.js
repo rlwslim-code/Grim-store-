@@ -166,13 +166,71 @@ export function installGrimPayments(app, {productById, fetchImpl = globalThis.fe
       const config = configuration();
       const data = await paystack(`verify/${encodeURIComponent(reference)}`, config);
       const order = signedOrder(data.metadata, config.secret);
-      const matches = order?.version === 1 && order.reference === reference && data.reference === reference &&
-        Number.isSafeInteger(order.amount) && order.amount > 0 && data.amount === order.amount &&
-        order.currency === 'NGN' && data.currency === order.currency &&
-        order.mode === config.mode && data.domain === config.mode &&
-        typeof order.customer?.email === 'string' && String(data.customer?.email || '').toLowerCase() === order.customer.email;
-      if (!matches) return res.status(409).json({ok: false, verified: false, reference, error: 'Payment details do not match this GRIM checkout. Contact Customer Care with your reference.'});
-      return res.json({ok: true, verified: data.status === 'success', orderVerified: data.status === 'success', reference, amount: data.amount, currency: data.currency, status: data.status, mode: config.mode});
+      const checks = {
+  signedOrder: !!order,
+  version: order?.version === 1,
+
+  reference:
+    !!order &&
+    order.reference === reference &&
+    data.reference === reference,
+
+  amount:
+    !!order &&
+    Number.isSafeInteger(order.amount) &&
+    order.amount > 0 &&
+    data.amount === order.amount,
+
+  currency:
+    !!order &&
+    order.currency === 'NGN' &&
+    data.currency === order.currency,
+
+  mode:
+    !!order &&
+    order.mode === config.mode &&
+    data.domain === config.mode,
+
+  email:
+    !!order &&
+    typeof order.customer?.email === 'string' &&
+    String(data.customer?.email || '').toLowerCase() ===
+      order.customer.email.toLowerCase()
+};
+
+const matches = Object.values(checks).every(Boolean);
+const paid = data.status === 'success';
+
+if (!matches) {
+  console.error(
+    'GRIM payment integrity mismatch:',
+    reference,
+    checks
+  );
+
+  return res.json({
+    ok: true,
+    verified: false,
+    paystackPaid: paid,
+    orderVerified: false,
+    reference,
+    amount: data.amount,
+    currency: data.currency,
+    status: data.status,
+    checks
+  });
+}
+
+return res.json({
+  ok: true,
+  verified: paid,
+  paystackPaid: paid,
+  orderVerified: paid,
+  reference,
+  amount: data.amount,
+  currency: data.currency,
+  status: data.status
+});
     } catch (error) {
       return res.status(error.statusCode || 503).json({ok: false, verified: false, reference, error: error.name === 'TimeoutError' ? 'The payment check timed out. Keep your reference and check again before paying another time.' : error.message});
     }
