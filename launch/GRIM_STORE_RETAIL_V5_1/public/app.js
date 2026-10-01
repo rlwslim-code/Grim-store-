@@ -84,31 +84,22 @@ function openBag(){E('bag')?.classList.add('open')}function closeBag(){E('bag')?
 
   try{
     const response = await fetch('/api/me', {
-  method: 'GET',
-  credentials: 'include',
-  cache: 'no-store'
-});
+      method: 'GET',
+      credentials: 'include',
+      cache: 'no-store'
+    });
 
-let user = null;
+    let user = null;
 
-if (response.ok) {
-  try {
-    user = await response.json();
-  } catch (e) {
-    user = null;
-  }
-}
+    if(response.ok){
+      try{
+        user = await response.json();
+      }catch(e){
+        user = null;
+      }
+    }
 
-if (!response.ok || !user || !user.email) {
-  E('bag')?.classList.remove('open');
-
-  if (typeof setMode === 'function') {
-    setMode('login');
-  }
-
-  E('auth')?.classList.add('open');
-  return;
-}
+    if(!response.ok || !user || !user.email){
       E('bag')?.classList.remove('open');
 
       if(typeof setMode === 'function'){
@@ -118,6 +109,7 @@ if (!response.ok || !user || !user.email) {
       E('auth')?.classList.add('open');
       return;
     }
+
   }catch(error){
     E('bag')?.classList.remove('open');
 
