@@ -9,9 +9,11 @@ import fs from "fs";
 import crypto from "crypto";
 import multer from "multer";
 import {fileURLToPath} from "url";
+import { OAuth2Client } from "google-auth-library";
 import {installGrimPayments} from "./grim-payments.js";
 dotenv.config();
 
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const __dirname=path.dirname(fileURLToPath(import.meta.url));
 const app=express();
 app.use((req, res, next) => {
