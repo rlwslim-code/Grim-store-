@@ -110,7 +110,6 @@
         const authorizationUrl = paymentURL(result.authorizationUrl);
         remember({reference: result.reference, amount: result.amount, authorizationUrl, fingerprint, basket: basket(cart)});
         // Keep the existing receipt launcher available even if the customer cancels or closes Paystack.
-        showReference(result.reference, result.amount);
         window.location.assign(authorizationUrl);
       } catch (error) {
         message(error.name === 'AbortError' ? 'Payment preparation timed out. If you already paid, use PAYMENT STATUS before paying again.' : error.message);
@@ -126,8 +125,7 @@
   const reference = returning === 'cancel' ? pending?.reference : params.get('reference') || params.get('trxref');
   if (returning && validReference(reference)) {
     lock(true);
-    showReference(reference, pending?.reference === reference ? pending.amount : undefined);
-    request('verify', {reference}).then(result => {
+      request('verify', {reference}).then(result => {
       if (result.reference !== reference) throw new Error('Payment reference mismatch. Contact Customer Care.');
       if (!complete(result)) message(`Payment not confirmed. Reference: ${reference}. Use PAYMENT STATUS before paying again.`);
     }).catch(error => message(`Keep reference ${reference}. ${error.name === 'AbortError' ? 'The check timed out. Check PAYMENT STATUS before paying again.' : error.message}`)).finally(() => lock(false));
