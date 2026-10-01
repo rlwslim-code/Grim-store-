@@ -96,8 +96,24 @@
         </div>
         <input id="aEmail" name="username" type="email" required placeholder="Email" autocomplete="username">
         <div class="auth-phone-wrap">
-          <input id="aPhone" name="phone" type="tel" placeholder="Phone number" autocomplete="tel">
-        </div>
+  <select id="aCountryCode" aria-label="Country code">
+    <option value="+1">🇺🇸 +1</option>
+    <option value="+234">🇳🇬 +234</option>
+    <option value="+44">🇬🇧 +44</option>
+    <option value="+33">🇫🇷 +33</option>
+    <option value="+49">🇩🇪 +49</option>
+    <option value="+34">🇪🇸 +34</option>
+    <option value="+1">🇨🇦 +1</option>
+  </select>
+
+  <input
+    id="aPhone"
+    name="phone"
+    type="tel"
+    placeholder="Phone number"
+    autocomplete="tel"
+  >
+</div>
         <input id="aPass" type="password" required placeholder="Password" autocomplete="current-password">
         <div id="passwordRules" class="password-rules">
           <span id="ruleLength">At least 8 characters</span>
