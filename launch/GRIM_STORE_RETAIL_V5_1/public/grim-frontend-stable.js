@@ -250,13 +250,114 @@
 
   enhanceAuthPhone();
 
-  const googleButton = $('grimGoogleButton');
-  if (googleButton) {
-    googleButton.addEventListener('click', () => {
-      const msg = $('aMsg');
-      if (msg) msg.textContent = 'Google Sign-In is ready for the integration stage.';
+async function handleGoogleCredential(response) {
+  const msg = $('aMsg');
+
+  try {
+    if (msg) msg.textContent = 'Signing in with Google...';
+
+    const loginResponse = await fetch('/api/auth/google', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        credential: response.credential
+      })
     });
+
+    const result = await loginResponse.json();
+
+    if (!loginResponse.ok) {
+      if (msg) msg.textContent = result.error || 'Google Sign-In failed.';
+      return;
+    }
+
+    if (msg) msg.textContent = 'WELCOME TO GRIM.';
+
+    if ($('acct')) {
+      const label = result.name || result.email?.split('@')[0] || 'ACCOUNT';
+      $('acct').textContent = String(label).toUpperCase();
+    }
+
+    const resume = pendingCheckout;
+    pendingCheckout = false;
+
+    if (originalCloseAuth) originalCloseAuth();
+    else $('auth')?.classList.remove('open');
+
+    if (resume) {
+      setTimeout(() => window.openCheckout(), 150);
+    }
+
+  } catch (error) {
+    console.error('GRIM Google Sign-In error:', error);
+    if (msg) msg.textContent = 'Unable to sign in with Google.';
   }
+}
+
+async function setupGoogleSignIn() {
+  const oldButton = $('grimGoogleButton');
+  if (!oldButton) return;
+
+  try {
+    const configResponse = await fetch('/api/google-config', {
+      credentials: 'include',
+      cache: 'no-store'
+    });
+
+    const config = await configResponse.json();
+
+    if (!config.clientId) {
+      throw new Error('Missing Google Client ID');
+    }
+
+    if (!window.google?.accounts?.id) {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://accounts.google.com/gsi/client';
+        script.async = true;
+        script.defer = true;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+    }
+
+    const googleContainer = document.createElement('div');
+    googleContainer.id = 'grimGoogleRenderedButton';
+    googleContainer.style.width = '100%';
+
+    oldButton.replaceWith(googleContainer);
+
+    google.accounts.id.initialize({
+      client_id: config.clientId,
+      callback: handleGoogleCredential
+    });
+
+    google.accounts.id.renderButton(
+      googleContainer,
+      {
+        type: 'standard',
+        theme: 'outline',
+        size: 'large',
+        text: 'continue_with',
+        shape: 'rectangular',
+        logo_alignment: 'left',
+        width: Math.min(400, googleContainer.parentElement?.clientWidth || 400)
+      }
+    );
+
+  } catch (error) {
+    console.error('GRIM Google setup error:', error);
+
+    const msg = $('aMsg');
+    if (msg) msg.textContent = 'Google Sign-In is temporarily unavailable.';
+  }
+}
+
+setupGoogleSignIn();
 
   const authForm = $('authForm');
   if (authForm) {
