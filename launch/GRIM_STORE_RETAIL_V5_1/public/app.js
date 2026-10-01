@@ -399,7 +399,7 @@ function startGrimPayment(method) {
     },
 
     onSuccess: async (transaction) => {
-    E('paymentMessage').textContent = 'Verifying 
+    E('paymentMessage').textContent = 'Verifying payment…';
       window.GRIMPaymentStatus?.save(transaction.reference, Math.round(total * 100));
 
     try {
