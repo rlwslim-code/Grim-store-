@@ -11,6 +11,14 @@ import multer from "multer";
 import {fileURLToPath} from "url";
 import { OAuth2Client } from "google-auth-library";
 import {installGrimPayments} from "./grim-payments.js";
+import {
+  startGrimSession,
+  touchGrimSession,
+  endGrimSession,
+  trackSupportMessage,
+  trackOrderActivity
+} from "./grim-analytics.js";
+
 dotenv.config();
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -74,13 +82,78 @@ installGrimPayments(app, {productById});
 app.get("/api/products",(q,s)=>s.json(listProducts(false)));
 app.get("/api/market",(q,s)=>{let raw=String(q.headers["cf-ipcountry"]||q.headers["x-vercel-ip-country"]||q.headers["x-country-code"]||"").toUpperCase();s.json({country:/^[A-Z]{2}$/.test(raw)?raw:null})});
 app.get("/api/me",(q,s)=>s.json(q.session.user||null));
+
+app.post("/api/session/heartbeat", async (req, res) => {
+  if (!req.session?.user) {
+    return res.status(401).json({ ok: false });
+  }
+
+  await touchGrimSession(
+    req,
+    req.body?.path || req.headers.referer || "/"
+  );
+
+  res.json({ ok: true });
+});
+
+app.post("/api/logout", async (req, res) => {
+  await endGrimSession(req, "logout");
+
+  req.session.user = null;
+
+  req.session.save(() => {
+    res.json({ ok: true });
+  });
+});
+
 app.get("/api/google-config", (req, res) => {
   res.json({
     clientId: process.env.GOOGLE_CLIENT_ID || ""
   });
 });
-app.post("/api/register",async(q,s)=>{let{name,email,password}=q.body||{};if(!name||!email||!password||password.length<6)return s.status(400).json({error:"Complete all fields."});try{let hash=await bcrypt.hash(password,12),r=db.prepare("INSERT INTO users(name,email,password_hash) VALUES(?,?,?)").run(name,email.toLowerCase(),hash);q.session.user={id:r.lastInsertRowid,name,email:email.toLowerCase()};s.json(q.session.user)}catch(e){s.status(400).json({error:"That email is already registered."})}});
-app.post("/api/login",async(q,s)=>{let{email,password}=q.body||{},u=db.prepare("SELECT * FROM users WHERE email=?").get((email||"").toLowerCase());if(!u||!await bcrypt.compare(password||"",u.password_hash))return s.status(401).json({error:"Incorrect email or password."});q.session.user={id:u.id,name:u.name,email:u.email};s.json(q.session.user)});
+app.post("/api/register",async(q,s)=>{let{name,email,password}=q.body||{};if(!name||!email||!password||password.length<6)return s.status(400).json({error:"Complete all fields."});try{let hash=await bcrypt.hash(password,12),r=db.prepare("INSERT INTO users(name,email,password_hash) VALUES(?,?,?)").run(name,email.toLowerCase(),hash);q.session.user = {
+  id: r.lastInsertRowid,
+  name,
+  email: email.toLowerCase()
+};
+
+await startGrimSession(
+  q,
+  q.session.user,
+  "password"
+);
+
+s.json(q.session.user)
+app.post("/api/login", async (q, s) => {
+  let { email, password } = q.body || {};
+
+  const u = db
+    .prepare("SELECT * FROM users WHERE email=?")
+    .get((email || "").toLowerCase());
+
+  if (
+    !u ||
+    !await bcrypt.compare(password || "", u.password_hash)
+  ) {
+    return s.status(401).json({
+      error: "Incorrect email or password."
+    });
+  }
+
+  q.session.user = {
+    id: u.id,
+    name: u.name,
+    email: u.email
+  };
+
+  await startGrimSession(
+    q,
+    q.session.user,
+    "password"
+  );
+
+  s.json(q.session.user);
+});
 app.post("/api/auth/google", async (req, res) => {
   try {
     if (!process.env.GOOGLE_CLIENT_ID) {
@@ -146,7 +219,13 @@ app.post("/api/auth/google", async (req, res) => {
       name: user.name || name,
       email: user.email
     };
-
+    
+    await startGrimSession(
+  req,
+  req.session.user,
+  "google"
+);
+    
     return res.json({
       ok: true,
       ...req.session.user
