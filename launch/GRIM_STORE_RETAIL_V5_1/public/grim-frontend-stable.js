@@ -26,10 +26,15 @@
   let pendingCheckout = false;
   let authMode = 'login';
 
-  const countryOptions = selected => Object.entries(COUNTRY_DIALS)
-    .map(([code, [name, dial]]) =>
-      `<option value="${code}" ${code === selected ? 'selected' : ''}>${name} ${dial}</option>`
-    ).join('');
+  const countryFlag = code =>
+  code.replace(/./g, char =>
+    String.fromCodePoint(127397 + char.charCodeAt())
+  );
+
+const countryOptions = selected => Object.entries(COUNTRY_DIALS)
+  .map(([code, [, dial]]) =>
+    `<option value="${code}" ${code === selected ? 'selected' : ''}>${countryFlag(code)} ${dial}</option>`
+  ).join('');
 
   function selectedMarketCountry() {
     try {
