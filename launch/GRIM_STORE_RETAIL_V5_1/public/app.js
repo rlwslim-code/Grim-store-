@@ -52,6 +52,12 @@ function openBag(){E('bag')?.classList.add('open')}function closeBag(){E('bag')?
 
   E('checkout')?.classList.add('open');
 }
+function closeCheckout(){
+  E('checkout')?.classList.remove('open');
+
+  document.body.style.overflow = '';
+  document.documentElement.style.overflow = '';
+}
 if(E('authForm'))E('authForm').onsubmit=async e=>{e.preventDefault();let r=await fetch('/api/'+mode,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:E('aName').value,email:E('aEmail').value,password:E('aPass').value})}),j=await r.json();E('aMsg').textContent=r.ok?'WELCOME TO THE HOUSE.':j.error;if(r.ok){E('acct').textContent=j.name.toUpperCase();setTimeout(closeAuth,600)}};
 if(E('orderForm'))E('orderForm').onsubmit=async e=>{e.preventDefault();let r=await fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:E('oName').value,email:E('oEmail').value,phone:E('oPhone').value,address:E('oAddress').value,country:market.country,currency:market.currency,items:cart.map(x=>({id:x.id,qty:x.qty,size:x.size}))})}),j=await r.json();if(r.ok){E('oMsg').textContent=`ORDER #${j.orderId} RECEIVED — ${M(j.total)}`;cart=[];save();draw();E('orderForm').reset()}else E('oMsg').textContent=j.error};setMode('login');init();
 
