@@ -36,3 +36,130 @@ body{background:#f7f5f1}.hamb{display:none;border:0;background:none;font-size:22
   .site-header .actions button{font-size:8.5px!important;padding:8px 3px!important}
 }
 .type-pill,.product-type{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* ===== GRIM LUXURY V5.1 ===== */
+
+:root{
+  --grim-black:#090909;
+  --grim-ink:#151015;
+  --grim-ivory:#f4efe6;
+  --grim-wine:#6f0d3d;
+  --grim-crimson:#b31355;
+  --grim-purple:#40104f;
+  --grim-blue:#1749a8;
+  --grim-gold:#c6a15b;
+  --grim-line:rgba(198,161,91,.28);
+}
+
+/* richer site atmosphere */
+body{
+  background:
+    radial-gradient(circle at 15% 15%,rgba(111,13,61,.12),transparent 32%),
+    radial-gradient(circle at 85% 45%,rgba(23,73,168,.10),transparent 35%),
+    var(--grim-black);
+}
+
+/* luxury header */
+header,
+.site-header{
+  background:rgba(9,9,9,.92);
+  border-bottom:1px solid var(--grim-line);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+}
+
+/* premium links */
+a{
+  transition:opacity .25s ease,color .25s ease;
+}
+
+a:hover{
+  color:var(--grim-gold);
+}
+
+/* premium buttons */
+button,
+.btn,
+.cta{
+  letter-spacing:.12em;
+  transition:
+    transform .2s ease,
+    box-shadow .25s ease,
+    filter .25s ease;
+}
+
+button:hover,
+.btn:hover,
+.cta:hover{
+  transform:translateY(-1px);
+}
+
+/* GRIM signature gradient */
+.checkout button[type="submit"],
+#payCard,
+#payTransfer,
+.cta{
+  background:
+    linear-gradient(
+      105deg,
+      #180d22 0%,
+      var(--grim-purple) 24%,
+      var(--grim-crimson) 57%,
+      var(--grim-blue) 100%
+    );
+  color:white;
+  border:1px solid rgba(255,255,255,.08);
+  box-shadow:
+    0 12px 35px rgba(0,0,0,.35),
+    inset 0 1px 0 rgba(255,255,255,.10);
+}
+
+/* elegant modal treatment */
+.modal .box,
+.checkout-box{
+  background:
+    linear-gradient(
+      145deg,
+      rgba(248,243,234,.99),
+      rgba(238,230,217,.99)
+    );
+  border-top:3px solid var(--grim-gold);
+  box-shadow:
+    0 28px 80px rgba(0,0,0,.55);
+}
+
+/* cart luxury */
+#bag{
+  background:
+    linear-gradient(
+      180deg,
+      #f6f1e8 0%,
+      #eee5d8 100%
+    );
+}
+
+#bag h2{
+  letter-spacing:.08em;
+}
+
+.bag-total{
+  border-top:1px solid rgba(70,45,35,.22);
+}
+
+/* product imagery feels more editorial */
+.product-card img,
+.product img{
+  transition:transform .45s ease,filter .45s ease;
+}
+
+.product-card:hover img,
+.product:hover img{
+  transform:scale(1.025);
+  filter:contrast(1.03);
+}
+
+/* subtle gold separators */
+.site-footer,
+.benefits,
+.home-links{
+  border-color:var(--grim-line);
+}
