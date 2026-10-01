@@ -234,3 +234,173 @@ body{
     max-width:100vw !important;
   }
 }
+/* ===== GRIM SHOP + CHECKOUT LUXURY COLOR ===== */
+
+/* SHOP PAGE */
+
+.shop{
+  background:
+    radial-gradient(circle at 8% 12%,rgba(111,13,61,.20),transparent 26%),
+    radial-gradient(circle at 92% 42%,rgba(23,73,168,.18),transparent 30%),
+    #090909;
+}
+
+.card{
+  overflow:hidden;
+  border:1px solid rgba(198,161,91,.42) !important;
+  border-radius:18px;
+  background:#f5f0e8 !important;
+  box-shadow:
+    0 12px 32px rgba(0,0,0,.32),
+    0 0 0 1px rgba(255,255,255,.03);
+}
+
+.card .info{
+  background:
+    linear-gradient(
+      145deg,
+      #faf6ef 0%,
+      #f1e7dc 62%,
+      #ede2eb 100%
+    );
+}
+
+.card h3{
+  color:#160d18;
+}
+
+.colorway{
+  color:#79143f !important;
+  letter-spacing:.08em;
+}
+
+.card .info button{
+  background:
+    linear-gradient(
+      105deg,
+      #1b0d25 0%,
+      #481052 28%,
+      #b31355 64%,
+      #1749a8 100%
+    ) !important;
+  border:1px solid rgba(198,161,91,.55) !important;
+  color:#fff !important;
+  box-shadow:0 10px 25px rgba(64,16,79,.25);
+}
+
+.size-label select{
+  background:
+    linear-gradient(135deg,#fff,#f1e8f2) !important;
+  border:1px solid rgba(111,13,61,.30) !important;
+}
+
+
+/* CHECKOUT */
+
+#checkout{
+  background:rgba(3,3,5,.78);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+}
+
+#checkout .checkout-box{
+  position:relative;
+  background:
+    radial-gradient(circle at 0% 0%,rgba(179,19,85,.10),transparent 32%),
+    radial-gradient(circle at 100% 30%,rgba(23,73,168,.10),transparent 35%),
+    linear-gradient(145deg,#f8f2e9,#eee5db) !important;
+
+  border-top:4px solid #c6a15b !important;
+  box-shadow:
+    0 30px 90px rgba(0,0,0,.65),
+    inset 0 1px rgba(255,255,255,.8);
+}
+
+#checkout .eyebrow{
+  color:#6f0d3d;
+  font-weight:700;
+}
+
+#checkout h2{
+  color:#160d18;
+}
+
+#checkout h3{
+  color:#6f0d3d;
+  letter-spacing:.04em;
+}
+
+#grimCheckoutForm input,
+#grimCheckoutForm select,
+#grimCheckoutForm textarea{
+  background:rgba(255,255,255,.72) !important;
+  border:1px solid rgba(64,16,79,.23) !important;
+  color:#171117;
+}
+
+#grimCheckoutForm input:focus,
+#grimCheckoutForm select:focus,
+#grimCheckoutForm textarea:focus{
+  outline:none;
+  border-color:#b31355 !important;
+  box-shadow:0 0 0 3px rgba(179,19,85,.10);
+}
+
+.checkout-steps b{
+  border-color:rgba(198,161,91,.40) !important;
+}
+
+.checkout-steps .active{
+  border-color:#b31355 !important;
+  color:#6f0d3d;
+}
+
+#checkout .x{
+  background:#171017 !important;
+  color:#fff !important;
+  border:1px solid #c6a15b !important;
+  border-radius:50%;
+  width:42px;
+  height:42px;
+  display:grid;
+  place-items:center;
+  font-size:26px;
+  line-height:1;
+}
+
+/* payment section */
+#paymentStep{
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255,255,255,.25),
+      rgba(111,13,61,.04)
+    );
+}
+
+#payCard,
+#payTransfer{
+  background:
+    linear-gradient(
+      100deg,
+      #190d22,
+      #501053,
+      #b31355,
+      #1749a8
+    ) !important;
+
+  border:1px solid rgba(198,161,91,.55) !important;
+  color:#fff !important;
+}
+
+/* MOBILE */
+@media(max-width:600px){
+  #checkout .checkout-box{
+    width:calc(100% - 24px) !important;
+    margin:12px auto;
+  }
+
+  .card{
+    border-radius:15px;
+  }
+}
