@@ -35,7 +35,15 @@ function add(id){let p=catalog.find(v=>v.id==id);if(!p)return;let size=E('size-'
 function qty(i,d){cart[i].qty+=d;if(cart[i].qty<1)cart.splice(i,1);save();draw()}
 function removeItem(i){cart.splice(i,1);save();draw()}
 function draw(){if(E('count'))E('count').textContent=cart.reduce((a,x)=>a+x.qty,0);if(E('items'))E('items').innerHTML=cart.map((x,i)=>`<div class="cart-line"><img src="${productVisual(x)}"><div><b>${x.name}</b><small>${x.color} · ${x.size}</small><div class="qty"><button onclick="qty(${i},-1)">−</button><span>${x.qty}</span><button onclick="qty(${i},1)">+</button><button class="remove" onclick="removeItem(${i})">REMOVE</button></div></div><strong>${M(x.price*x.qty)}</strong></div>`).join('')||'<p>Your bag is empty.</p>';if(E('total'))E('total').textContent=M(cart.reduce((a,x)=>a+x.price*x.qty,0))}
-function openBag(){E('bag')?.classList.add('open')}function closeBag(){E('bag')?.classList.remove('open')}function openAuth(){E('auth')?.classList.add('open')}function closeAuth(){E('auth')?.classList.remove('open')}function setMode(x){mode=x;let n=E('aName');if(n){n.style.display=x==='register'?'block':'none';n.required=x==='register'}if(E('aMsg'))E('aMsg').textContent=''}function openCheckout(){if(!cart.length)return;closeBag();E('checkout')?.classList.add('open')}function closeCheckout(){E('checkout')?.classList.remove('open')}
+function openBag(){E('bag')?.classList.add('open')}function closeBag(){E('bag')?.classList.remove('open')}function openAuth(){E('auth')?.classList.add('open')}function closeAuth(){E('auth')?.classList.remove('open')}function setMode(x){mode=x;let n=E('aName');if(n){n.style.display=x==='register'?'block':'none';n.required=x==='register'}if(E('aMsg'))E('aMsg').textContent=''}function openCheckout(){
+  if(!cart.length) return;
+
+  E('bag')?.classList.remove('open');
+
+  buildGrimCheckout();
+
+  E('checkout')?.classList.add('open');
+}
 if(E('authForm'))E('authForm').onsubmit=async e=>{e.preventDefault();let r=await fetch('/api/'+mode,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:E('aName').value,email:E('aEmail').value,password:E('aPass').value})}),j=await r.json();E('aMsg').textContent=r.ok?'WELCOME TO THE HOUSE.':j.error;if(r.ok){E('acct').textContent=j.name.toUpperCase();setTimeout(closeAuth,600)}};
 if(E('orderForm'))E('orderForm').onsubmit=async e=>{e.preventDefault();let r=await fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:E('oName').value,email:E('oEmail').value,phone:E('oPhone').value,address:E('oAddress').value,country:market.country,currency:market.currency,items:cart.map(x=>({id:x.id,qty:x.qty,size:x.size}))})}),j=await r.json();if(r.ok){E('oMsg').textContent=`ORDER #${j.orderId} RECEIVED — ${M(j.total)}`;cart=[];save();draw();E('orderForm').reset()}else E('oMsg').textContent=j.error};setMode('login');init();
 
