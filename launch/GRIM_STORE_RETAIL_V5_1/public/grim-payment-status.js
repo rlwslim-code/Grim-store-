@@ -9,7 +9,7 @@
     return null;
   }
   function persist(value){for(const store of stores){try{store.setItem(KEY,JSON.stringify(value));return true}catch(error){}}return false}
-  const style=document.createElement('link');style.rel='stylesheet';style.href='/grim-payment-status.css?v=1';document.head.append(style);
+  const style=document.createElement('link');style.rel='stylesheet';style.href='/grim-payment-status.css?v=2';document.head.append(style);
   const root=document.createElement('div');root.className='grim-payment-status';
   root.innerHTML=`<button class="gps-launch" type="button" hidden>PAYMENT STATUS</button>
     <div class="gps-overlay" hidden><section class="gps-card" role="dialog" aria-modal="true" aria-labelledby="gps-title">
@@ -18,6 +18,10 @@
     <p class="gps-detail" role="status" aria-live="polite"></p>
     <dl><dt>REFERENCE</dt><dd class="gps-reference"></dd><dt>AMOUNT</dt><dd class="gps-amount">—</dd></dl>
     <button class="gps-check" type="button">CHECK AGAIN</button>
+    <div class="gps-restore">
+  <input class="gps-reference-input" type="text" placeholder="Enter Paystack reference">
+  <button class="gps-use-reference" type="button">USE PAYMENT REFERENCE</button>
+</div>
     <p class="gps-note">Your reference stays on this device. You can reopen PAYMENT STATUS after closing checkout.</p>
     <a href="/support.html">CONTACT GRIM CUSTOMER CARE</a>
     <button class="gps-forget" type="button">REMOVE SAVED REFERENCE</button>
@@ -56,6 +60,27 @@
   $('.gps-launch').addEventListener('click',open);
   $('.gps-close').addEventListener('click',()=>{$('.gps-overlay').hidden=true});
   $('.gps-check').addEventListener('click',check);
+  $('.gps-use-reference').addEventListener('click',()=>{
+  const reference=$('.gps-reference-input').value.trim();
+
+  if(!validReference(reference)){
+    status(
+      'INVALID REFERENCE',
+      'Enter a valid Paystack payment reference.'
+    );
+    return;
+  }
+
+  persist({
+    reference,
+    amount:null
+  });
+
+  $('.gps-reference-input').value='';
+  $('.gps-launch').hidden=false;
+
+  check();
+});
   $('.gps-forget').addEventListener('click',()=>{
     if(!window.confirm('Keep a copy of your payment reference before removing it from this device. Continue?'))return;
     for(const store of stores){try{store.removeItem(KEY)}catch(error){}}
