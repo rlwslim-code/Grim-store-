@@ -35,7 +35,50 @@ function add(id){let p=catalog.find(v=>v.id==id);if(!p)return;let size=E('size-'
 function qty(i,d){cart[i].qty+=d;if(cart[i].qty<1)cart.splice(i,1);save();draw()}
 function removeItem(i){cart.splice(i,1);save();draw()}
 function draw(){if(E('count'))E('count').textContent=cart.reduce((a,x)=>a+x.qty,0);if(E('items'))E('items').innerHTML=cart.map((x,i)=>`<div class="cart-line"><img src="${productVisual(x)}"><div><b>${x.name}</b><small>${x.color} · ${x.size}</small><div class="qty"><button onclick="qty(${i},-1)">−</button><span>${x.qty}</span><button onclick="qty(${i},1)">+</button><button class="remove" onclick="removeItem(${i})">REMOVE</button></div></div><strong>${M(x.price*x.qty)}</strong></div>`).join('')||'<p>Your bag is empty.</p>';if(E('total'))E('total').textContent=M(cart.reduce((a,x)=>a+x.price*x.qty,0))}
-function openBag(){E('bag')?.classList.add('open')}function closeBag(){E('bag')?.classList.remove('open')}function openAuth(){E('auth')?.classList.add('open')}function closeAuth(){E('auth')?.classList.remove('open')}function setMode(x){mode=x;let n=E('aName');if(n){n.style.display=x==='register'?'block':'none';n.required=x==='register'}if(E('aMsg'))E('aMsg').textContent=''}
+function openBag(){E('bag')?.classList.add('open')}function closeBag(){E('bag')?.classList.remove('open')}function openAuth(){E('auth')?.classList.add('open')}function closeAuth(){E('auth')?.classList.remove('open')}function setMode(x){
+  mode = x;
+
+  const registering = x === 'register';
+
+  const nameFields = E('authNameFields');
+  const phone = E('aPhone');
+  const phoneWrap = phone?.closest('.auth-phone-wrap');
+  const confirm = E('aConfirm');
+  const rules = E('passwordRules');
+  const pass = E('aPass');
+
+  if(nameFields){
+    nameFields.style.display = registering ? 'grid' : 'none';
+  }
+
+  if(phoneWrap){
+    phoneWrap.style.display = registering ? 'block' : 'none';
+  }
+
+  if(confirm){
+    confirm.style.display = registering ? 'block' : 'none';
+    confirm.required = registering;
+    if(!registering) confirm.value = '';
+  }
+
+  if(rules){
+    rules.style.display = registering ? 'flex' : 'none';
+  }
+
+  if(E('aFirst')) E('aFirst').required = registering;
+  if(E('aLast')) E('aLast').required = registering;
+  if(phone) phone.required = registering;
+
+  if(pass){
+    pass.autocomplete = registering ? 'new-password' : 'current-password';
+  }
+
+  if(E('aMsg')){
+    E('aMsg').textContent = '';
+  }
+
+  updateGrimPasswordRules();
+}
   async function openCheckout(){
   if(!cart.length) return;
 
@@ -87,7 +130,182 @@ function closeCheckout(){
   document.body.style.overflow = '';
   document.documentElement.style.overflow = '';
 }
-if(E('authForm'))E('authForm').onsubmit=async e=>{e.preventDefault();let r=await fetch('/api/'+mode,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:E('aName').value,email:E('aEmail').value,password:E('aPass').value})}),j=await r.json();E('aMsg').textContent=r.ok?'WELCOME TO THE HOUSE.':j.error;if(r.ok){E('acct').textContent=j.name.toUpperCase();setTimeout(closeAuth,600)}};
+// ===== GRIM LIVE PASSWORD CHECK =====
+const grimPass = E('aPass');
+const grimConfirm = E('aConfirm');
+
+function grimPasswordRule(id, passed, label, touched = true){
+  const el = E(id);
+  if(!el) return;
+
+  if(!touched){
+    el.textContent = `○ ${label}`;
+    el.style.color = '#777';
+    return;
+  }
+
+  if(passed){
+    el.textContent = `✓ ${label}`;
+    el.style.color = '#168a45';
+  }else{
+    el.textContent = `○ ${label}`;
+    el.style.color = '#777';
+  }
+}
+
+function updateGrimPasswordRules(){
+  const password = grimPass?.value || '';
+  const confirmPassword = grimConfirm?.value || '';
+
+  const touched = password.length > 0;
+
+  grimPasswordRule(
+    'ruleLength',
+    password.length >= 8,
+    'At least 8 characters',
+    touched
+  );
+
+  grimPasswordRule(
+    'ruleUpper',
+    /[A-Z]/.test(password),
+    'One uppercase letter',
+    touched
+  );
+
+  grimPasswordRule(
+    'ruleLower',
+    /[a-z]/.test(password),
+    'One lowercase letter',
+    touched
+  );
+
+  grimPasswordRule(
+    'ruleNumber',
+    /[0-9]/.test(password),
+    'One number',
+    touched
+  );
+
+  grimPasswordRule(
+    'ruleSpecial',
+    /[^A-Za-z0-9]/.test(password),
+    'One special character',
+    touched
+  );
+
+  grimPasswordRule(
+    'ruleMatch',
+    confirmPassword.length > 0 && password === confirmPassword,
+    'Passwords match',
+    confirmPassword.length > 0
+  );
+}
+
+grimPass?.addEventListener('input', updateGrimPasswordRules);
+grimConfirm?.addEventListener('input', updateGrimPasswordRules);
+
+updateGrimPasswordRules();
+if(E('authForm')) E('authForm').onsubmit = async e => {
+  e.preventDefault();
+
+  const email = (E('aEmail')?.value || '').trim().toLowerCase();
+  const password = E('aPass')?.value || '';
+  const msg = E('aMsg');
+
+  if(msg) msg.textContent = '';
+
+  let payload = {
+    email,
+    password
+  };
+
+  if(mode === 'register'){
+    const firstName = (E('aFirst')?.value || '').trim();
+    const lastName = (E('aLast')?.value || '').trim();
+    const phone = (E('aPhone')?.value || '').trim();
+    const confirmPassword = E('aConfirm')?.value || '';
+
+    const validPassword =
+      password.length >= 8 &&
+      /[A-Z]/.test(password) &&
+      /[a-z]/.test(password) &&
+      /[0-9]/.test(password) &&
+      /[^A-Za-z0-9]/.test(password);
+
+    if(!firstName || !lastName){
+      if(msg) msg.textContent = 'Enter your first and last name.';
+      return;
+    }
+
+    if(!email){
+      if(msg) msg.textContent = 'Enter your email address.';
+      return;
+    }
+
+    if(!phone){
+      if(msg) msg.textContent = 'Enter your phone number.';
+      return;
+    }
+
+    if(!validPassword){
+      if(msg) msg.textContent = 'Complete all password requirements.';
+      return;
+    }
+
+    if(password !== confirmPassword){
+      if(msg) msg.textContent = 'Passwords do not match.';
+      return;
+    }
+
+    payload = {
+      name: `${firstName} ${lastName}`.trim(),
+      firstName,
+      lastName,
+      email,
+      phone,
+      password
+    };
+  }
+
+  try{
+    const r = await fetch('/api/' + mode, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include',
+      body: JSON.stringify(payload)
+    });
+
+    const j = await r.json();
+
+    if(!r.ok){
+      if(msg) msg.textContent = j.error || 'Unable to continue.';
+      return;
+    }
+
+    if(msg){
+      msg.textContent =
+        mode === 'register'
+          ? 'ACCOUNT CREATED.'
+          : 'WELCOME BACK.';
+    }
+
+    if(E('acct') && j.name){
+      E('acct').textContent = j.name.toUpperCase();
+    }
+
+    setTimeout(closeAuth, 600);
+
+  }catch(error){
+    console.error('GRIM account error:', error);
+
+    if(msg){
+      msg.textContent = 'Unable to connect. Please try again.';
+    }
+  }
+};
 if(E('orderForm'))E('orderForm').onsubmit=async e=>{e.preventDefault();let r=await fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:E('oName').value,email:E('oEmail').value,phone:E('oPhone').value,address:E('oAddress').value,country:market.country,currency:market.currency,items:cart.map(x=>({id:x.id,qty:x.qty,size:x.size}))})}),j=await r.json();if(r.ok){E('oMsg').textContent=`ORDER #${j.orderId} RECEIVED — ${M(j.total)}`;cart=[];save();draw();E('orderForm').reset()}else E('oMsg').textContent=j.error};setMode('login');init();
 
 function toggleMobile(){E('mobileNav')?.classList.toggle('open')}
