@@ -1,0 +1,180 @@
+import {createHmac, randomBytes, timingSafeEqual} from 'node:crypto';
+
+// Added payment routes. Existing pages, catalog and legacy payment receipts stay in place.
+const PREFIX = /^GRIM-[a-f0-9]{32}$/;
+const COUNTRIES = new Set(['NG', 'US', 'GB', 'CA', 'GH', 'ZA', 'KE', 'AE']);
+const SIZES = new Set(['S', 'M', 'L', 'XL', 'XXL']);
+const ORIGINS = new Set(['https://rlwslim-code.github.io', 'https://rlwslim-code-github-io.vercel.app']);
+
+function field(value, label, maximum, optional = false, multiline = false) {
+  const text = typeof value === 'string' ? value.trim() : '';
+  const controls = multiline ? /[\u0000-\u0009\u000b\u000c\u000e-\u001f]/ : /[\u0000-\u001f]/;
+  if ((!optional && !text) || text.length > maximum || controls.test(text)) {
+    throw new Error(`Please enter a valid ${label}.`);
+  }
+  return text;
+}
+
+function buildOrder(body, productById, reference, mode) {
+  const customer = body?.customer || {};
+  const delivery = body?.delivery || {};
+  const email = field(customer.email, 'email address', 254).toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Please enter a valid email address.');
+  const contact = {
+    email,
+    firstName: field(customer.firstName, 'first name', 80),
+    lastName: field(customer.lastName, 'last name', 80),
+    phone: field(customer.phone, 'phone number', 40)
+  };
+  const address = {
+    country: field(delivery.country, 'country', 2),
+    address: field(delivery.address, 'street address', 250),
+    apartment: field(delivery.apartment, 'apartment', 100, true),
+    city: field(delivery.city, 'city', 100),
+    state: field(delivery.state, 'state or province', 100),
+    postal: field(delivery.postal, 'postal code', 30, true),
+    instructions: field(delivery.instructions, 'delivery instructions', 500, true, true)
+  };
+  if (!COUNTRIES.has(address.country)) throw new Error('Please select a supported delivery country.');
+  const channel = body?.method;
+  if (!['card', 'bank_transfer'].includes(channel)) throw new Error('Please choose a payment method.');
+  if (channel === 'bank_transfer' && address.country !== 'NG') throw new Error('Bank transfer is available for Nigerian checkout only.');
+  if (!Array.isArray(body?.items) || !body.items.length || body.items.length > 20) throw new Error('Please review the items in your bag.');
+
+  const items = [];
+  const quantities = new Map();
+  let amount = 0;
+  for (const item of body.items) {
+    if (!Number.isSafeInteger(item?.id) || !Number.isSafeInteger(item?.qty) || item.qty < 1 || item.qty > 10 || !SIZES.has(item?.size)) {
+      throw new Error('Each item needs a valid size and a quantity between 1 and 10.');
+    }
+    const product = productById(item.id);
+    if (!product?.active || !Number.isSafeInteger(product.price) || product.price <= 0) throw new Error('An item in your bag is unavailable. Please review your bag.');
+    const key = `${item.id}:${item.size}`;
+    const quantity = (quantities.get(key) || 0) + item.qty;
+    if (quantity > 10) throw new Error('Please limit each product and size to 10 pieces.');
+    quantities.set(key, quantity);
+    const line = items.find(value => value.id === item.id && value.size === item.size);
+    if (line) line.qty += item.qty;
+    else items.push({id: product.id, name: product.name, type: product.type, color: product.color, size: item.size, qty: item.qty, price: product.price});
+    amount += product.price * item.qty * 100;
+  }
+  if (!Number.isSafeInteger(amount) || amount <= 0) throw new Error('Please review your bag total.');
+  return {
+    version: 1, reference, mode, currency: 'NGN', amount,
+    customer: contact, delivery: address, items,
+    // Preserve the current checkout policy: the charge covers products; delivery is quoted separately.
+    deliveryFeeIncluded: false
+  };
+}
+
+function sign(orderJSON, secret) {
+  return createHmac('sha256', secret).update('GRIM-order-v1\n').update(orderJSON).digest('hex');
+}
+
+function signedOrder(metadata, secret) {
+  if (typeof metadata === 'string') {
+    try { metadata = JSON.parse(metadata); } catch { return null; }
+  }
+  const json = metadata?.grim_order;
+  const signature = metadata?.grim_signature;
+  if (typeof json !== 'string' || json.length > 30000 || !/^[a-f0-9]{64}$/.test(signature || '')) return null;
+  if (!timingSafeEqual(Buffer.from(signature, 'hex'), Buffer.from(sign(json, secret), 'hex'))) return null;
+  try { return JSON.parse(json); } catch { return null; }
+}
+
+function checkoutURL(value) {
+  try {
+    const url = new URL(value);
+    return url.origin === 'https://checkout.paystack.com' && !url.username && !url.password ? url.href : null;
+  } catch { return null; }
+}
+
+export function installGrimPayments(app, {productById, fetchImpl = globalThis.fetch, secretKey = () => process.env.PAYSTACK_SECRET_KEY}) {
+  function configuration() {
+    const secret = String(secretKey() || '').trim();
+    if (!/^sk_(live|test)_[a-zA-Z0-9]+$/.test(secret)) throw new Error('Secure payment is not configured. Please contact GRIM Customer Care.');
+    return {secret, mode: secret.startsWith('sk_live_') ? 'live' : 'test'};
+  }
+
+  async function paystack(path, config, body) {
+    const response = await fetchImpl(`https://api.paystack.co/transaction/${path}`, {
+      method: body ? 'POST' : 'GET',
+      headers: {Authorization: `Bearer ${config.secret}`, 'Content-Type': 'application/json'},
+      ...(body ? {body: JSON.stringify(body)} : {}),
+      signal: AbortSignal.timeout(15000)
+    });
+    const result = await response.json();
+    if (!response.ok || result.status !== true || !result.data) {
+      const error = new Error('Paystack could not complete this request. Keep your reference and contact Customer Care if money has left your account.');
+      error.statusCode = response.status === 400 || response.status === 404 ? 400 : 502;
+      throw error;
+    }
+    return result.data;
+  }
+
+  app.post('/api/payments/initialize', async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    let config;
+    try { config = configuration(); } catch (error) { return res.status(503).json({ok: false, error: error.message}); }
+    const reference = `GRIM-${randomBytes(16).toString('hex')}`;
+    let order;
+    try { order = buildOrder(req.body, productById, reference, config.mode); }
+    catch (error) { return res.status(400).json({ok: false, error: error.message}); }
+    if (req.body.expectedAmount !== order.amount) {
+      return res.status(409).json({ok: false, error: 'Your bag price has changed. Refresh the shop and review your bag before paying.'});
+    }
+    const previewOrigin = process.env.VERCEL_ENV === 'preview' && process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}` : null;
+    const origin = ORIGINS.has(req.headers.origin) || req.headers.origin === previewOrigin
+      ? req.headers.origin : 'https://rlwslim-code.github.io';
+    const orderJSON = JSON.stringify(order);
+    const address = [order.delivery.address, order.delivery.apartment, order.delivery.city, order.delivery.state, order.delivery.postal, order.delivery.country].filter(Boolean).join(', ');
+    const custom = (display_name, variable_name, value) => ({display_name, variable_name, value});
+    try {
+      const transaction = await paystack('initialize', config, {
+        email: order.customer.email, amount: order.amount, currency: order.currency, reference,
+        channels: [req.body.method], callback_url: `${origin}/?grim-payment=return`,
+        metadata: JSON.stringify({
+          grim_order: orderJSON, grim_signature: sign(orderJSON, config.secret),
+          cancel_action: `${origin}/?grim-payment=cancel`,
+          custom_fields: [
+            custom('GRIM Customer', 'grim_customer', `${order.customer.firstName} ${order.customer.lastName}`),
+            custom('Phone', 'grim_phone', order.customer.phone),
+            custom('Delivery Address', 'grim_address', address),
+            custom('GRIM Items', 'grim_items', order.items.map(item => `${item.name} / ${item.type} / ${item.color} / ${item.size} / Qty ${item.qty}`).join('; ')),
+            custom('Delivery Instructions', 'grim_instructions', order.delivery.instructions || 'None'),
+            custom('Delivery Fee', 'grim_delivery_fee', 'Not included in this product payment; quoted separately.')
+          ]
+        })
+      });
+      const authorizationURL = checkoutURL(transaction.authorization_url);
+      if (transaction.reference !== reference || !authorizationURL) throw new Error('Paystack returned an invalid checkout response. Please contact Customer Care.');
+      return res.json({ok: true, reference, amount: order.amount, currency: order.currency, mode: config.mode, authorizationUrl: authorizationURL});
+    } catch (error) {
+      return res.status(error.statusCode || 502).json({ok: false, reference, error: error.name === 'TimeoutError' ? 'Payment preparation timed out. No checkout was opened. Please try again.' : error.message});
+    }
+  });
+
+  // Mount before the original verify route. Old references still use the existing handler.
+  app.post('/api/payments/verify', async (req, res, next) => {
+    const reference = String(req.body?.reference || '').trim();
+    if (!reference.startsWith('GRIM-')) return next();
+    res.setHeader('Cache-Control', 'no-store');
+    if (!PREFIX.test(reference)) return res.status(400).json({ok: false, verified: false, error: 'Invalid GRIM payment reference.'});
+    try {
+      const config = configuration();
+      const data = await paystack(`verify/${encodeURIComponent(reference)}`, config);
+      const order = signedOrder(data.metadata, config.secret);
+      const matches = order?.version === 1 && order.reference === reference && data.reference === reference &&
+        Number.isSafeInteger(order.amount) && order.amount > 0 && data.amount === order.amount &&
+        order.currency === 'NGN' && data.currency === order.currency &&
+        order.mode === config.mode && data.domain === config.mode &&
+        typeof order.customer?.email === 'string' && String(data.customer?.email || '').toLowerCase() === order.customer.email;
+      if (!matches) return res.status(409).json({ok: false, verified: false, reference, error: 'Payment details do not match this GRIM checkout. Contact Customer Care with your reference.'});
+      return res.json({ok: true, verified: data.status === 'success', orderVerified: data.status === 'success', reference, amount: data.amount, currency: data.currency, status: data.status, mode: config.mode});
+    } catch (error) {
+      return res.status(error.statusCode || 503).json({ok: false, verified: false, reference, error: error.name === 'TimeoutError' ? 'The payment check timed out. Keep your reference and check again before paying another time.' : error.message});
+    }
+  });
+}
