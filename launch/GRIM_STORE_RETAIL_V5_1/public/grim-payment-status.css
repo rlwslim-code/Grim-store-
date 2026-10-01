@@ -107,3 +107,16 @@
     padding-right:24px !important;
   }
 }
+.auth-phone-wrap{
+  display:grid;
+  grid-template-columns:110px minmax(0,1fr);
+  gap:12px;
+  width:100%;
+}
+
+.auth-phone-wrap select,
+.auth-phone-wrap input{
+  width:100%;
+  min-width:0;
+  box-sizing:border-box;
+}
