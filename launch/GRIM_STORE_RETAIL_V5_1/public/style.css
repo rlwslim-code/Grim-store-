@@ -404,3 +404,64 @@ body{
     border-radius:15px;
   }
 }
+/* ===== GRIM MOBILE CHECKOUT WIDTH FIX ===== */
+
+@media (max-width: 600px){
+
+  /* CART */
+  #bag{
+    box-sizing:border-box !important;
+    width:100vw !important;
+    max-width:100vw !important;
+    right:0 !important;
+    left:auto !important;
+    padding-left:24px !important;
+    padding-right:24px !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+  }
+
+  #bag.open{
+    transform:translateX(0) !important;
+  }
+
+  #bag:not(.open){
+    transform:translateX(105%) !important;
+  }
+
+  #bag img{
+    max-width:100%;
+  }
+
+  /* CHECKOUT MODAL */
+  #checkout{
+    box-sizing:border-box !important;
+    padding:12px !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+  }
+
+  #checkout .checkout-box{
+    box-sizing:border-box !important;
+    width:100% !important;
+    max-width:100% !important;
+    margin:12px auto !important;
+    padding-left:22px !important;
+    padding-right:22px !important;
+    overflow-x:hidden !important;
+  }
+
+  #grimCheckoutForm,
+  #paymentStep{
+    width:100% !important;
+    max-width:100% !important;
+    box-sizing:border-box !important;
+  }
+
+  #grimCheckoutForm input,
+  #grimCheckoutForm select,
+  #grimCheckoutForm textarea{
+    box-sizing:border-box !important;
+    max-width:100% !important;
+  }
+}
