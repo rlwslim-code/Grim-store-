@@ -35,8 +35,37 @@ function add(id){let p=catalog.find(v=>v.id==id);if(!p)return;let size=E('size-'
 function qty(i,d){cart[i].qty+=d;if(cart[i].qty<1)cart.splice(i,1);save();draw()}
 function removeItem(i){cart.splice(i,1);save();draw()}
 function draw(){if(E('count'))E('count').textContent=cart.reduce((a,x)=>a+x.qty,0);if(E('items'))E('items').innerHTML=cart.map((x,i)=>`<div class="cart-line"><img src="${productVisual(x)}"><div><b>${x.name}</b><small>${x.color} · ${x.size}</small><div class="qty"><button onclick="qty(${i},-1)">−</button><span>${x.qty}</span><button onclick="qty(${i},1)">+</button><button class="remove" onclick="removeItem(${i})">REMOVE</button></div></div><strong>${M(x.price*x.qty)}</strong></div>`).join('')||'<p>Your bag is empty.</p>';if(E('total'))E('total').textContent=M(cart.reduce((a,x)=>a+x.price*x.qty,0))}
-function openBag(){E('bag')?.classList.add('open')}function closeBag(){E('bag')?.classList.remove('open')}function openAuth(){E('auth')?.classList.add('open')}function closeAuth(){E('auth')?.classList.remove('open')}function setMode(x){mode=x;let n=E('aName');if(n){n.style.display=x==='register'?'block':'none';n.required=x==='register'}if(E('aMsg'))E('aMsg').textContent=''}function openCheckout(){
+function openBag(){E('bag')?.classList.add('open')}function closeBag(){E('bag')?.classList.remove('open')}function openAuth(){E('auth')?.classList.add('open')}function closeAuth(){E('auth')?.classList.remove('open')}function setMode(x){mode=x;let n=E('aName');if(n){n.style.display=x==='register'?'block':'none';n.required=x==='register'}if(E('aMsg'))E('aMsg').textContent=''}
+  async function openCheckout(){
   if(!cart.length) return;
+
+  try{
+    const response = await fetch('/api/me', {
+      method: 'GET',
+      credentials: 'include',
+      cache: 'no-store'
+    });
+
+    if(!response.ok){
+      E('bag')?.classList.remove('open');
+
+      if(typeof setMode === 'function'){
+        setMode('login');
+      }
+
+      E('auth')?.classList.add('open');
+      return;
+    }
+  }catch(error){
+    E('bag')?.classList.remove('open');
+
+    if(typeof setMode === 'function'){
+      setMode('login');
+    }
+
+    E('auth')?.classList.add('open');
+    return;
+  }
 
   E('bag')?.classList.remove('open');
 
