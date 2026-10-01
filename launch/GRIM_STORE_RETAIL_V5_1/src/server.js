@@ -74,6 +74,11 @@ installGrimPayments(app, {productById});
 app.get("/api/products",(q,s)=>s.json(listProducts(false)));
 app.get("/api/market",(q,s)=>{let raw=String(q.headers["cf-ipcountry"]||q.headers["x-vercel-ip-country"]||q.headers["x-country-code"]||"").toUpperCase();s.json({country:/^[A-Z]{2}$/.test(raw)?raw:null})});
 app.get("/api/me",(q,s)=>s.json(q.session.user||null));
+app.get("/api/google-config", (req, res) => {
+  res.json({
+    clientId: process.env.GOOGLE_CLIENT_ID || ""
+  });
+});
 app.post("/api/register",async(q,s)=>{let{name,email,password}=q.body||{};if(!name||!email||!password||password.length<6)return s.status(400).json({error:"Complete all fields."});try{let hash=await bcrypt.hash(password,12),r=db.prepare("INSERT INTO users(name,email,password_hash) VALUES(?,?,?)").run(name,email.toLowerCase(),hash);q.session.user={id:r.lastInsertRowid,name,email:email.toLowerCase()};s.json(q.session.user)}catch(e){s.status(400).json({error:"That email is already registered."})}});
 app.post("/api/login",async(q,s)=>{let{email,password}=q.body||{},u=db.prepare("SELECT * FROM users WHERE email=?").get((email||"").toLowerCase());if(!u||!await bcrypt.compare(password||"",u.password_hash))return s.status(401).json({error:"Incorrect email or password."});q.session.user={id:u.id,name:u.name,email:u.email};s.json(q.session.user)});
 app.post("/api/auth/google", async (req, res) => {
