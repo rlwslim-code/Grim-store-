@@ -9,6 +9,7 @@ import fs from "fs";
 import crypto from "crypto";
 import multer from "multer";
 import {fileURLToPath} from "url";
+import {installGrimPayments} from "./grim-payments.js";
 dotenv.config();
 
 const __dirname=path.dirname(fileURLToPath(import.meta.url));
@@ -67,6 +68,7 @@ if(db.prepare("SELECT COUNT(*) n FROM products").get().n===0){
 
 const listProducts=(includeInactive=false)=>db.prepare(`SELECT id,name,type,price,color,image,active,sort_order FROM products ${includeInactive?"":"WHERE active=1"} ORDER BY sort_order,id`).all();
 const productById=id=>db.prepare("SELECT id,name,type,price,color,image,active,sort_order FROM products WHERE id=?").get(id);
+installGrimPayments(app, {productById});
 app.get("/api/products",(q,s)=>s.json(listProducts(false)));
 app.get("/api/market",(q,s)=>{let raw=String(q.headers["cf-ipcountry"]||q.headers["x-vercel-ip-country"]||q.headers["x-country-code"]||"").toUpperCase();s.json({country:/^[A-Z]{2}$/.test(raw)?raw:null})});
 app.get("/api/me",(q,s)=>s.json(q.session.user||null));
