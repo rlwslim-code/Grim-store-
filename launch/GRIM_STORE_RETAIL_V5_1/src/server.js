@@ -76,7 +76,85 @@ app.get("/api/market",(q,s)=>{let raw=String(q.headers["cf-ipcountry"]||q.header
 app.get("/api/me",(q,s)=>s.json(q.session.user||null));
 app.post("/api/register",async(q,s)=>{let{name,email,password}=q.body||{};if(!name||!email||!password||password.length<6)return s.status(400).json({error:"Complete all fields."});try{let hash=await bcrypt.hash(password,12),r=db.prepare("INSERT INTO users(name,email,password_hash) VALUES(?,?,?)").run(name,email.toLowerCase(),hash);q.session.user={id:r.lastInsertRowid,name,email:email.toLowerCase()};s.json(q.session.user)}catch(e){s.status(400).json({error:"That email is already registered."})}});
 app.post("/api/login",async(q,s)=>{let{email,password}=q.body||{},u=db.prepare("SELECT * FROM users WHERE email=?").get((email||"").toLowerCase());if(!u||!await bcrypt.compare(password||"",u.password_hash))return s.status(401).json({error:"Incorrect email or password."});q.session.user={id:u.id,name:u.name,email:u.email};s.json(q.session.user)});
+app.post("/api/auth/google", async (req, res) => {
+  try {
+    if (!process.env.GOOGLE_CLIENT_ID) {
+      return res.status(503).json({
+        error: "Google Sign-In is not configured."
+      });
+    }
 
+    const credential = String(req.body?.credential || "");
+
+    if (!credential) {
+      return res.status(400).json({
+        error: "Google credential is required."
+      });
+    }
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID
+    });
+
+    const profile = ticket.getPayload();
+
+    if (!profile?.email || !profile.email_verified) {
+      return res.status(401).json({
+        error: "Google could not verify this email."
+      });
+    }
+
+    const email = profile.email.toLowerCase();
+    const name =
+      profile.name ||
+      [profile.given_name, profile.family_name]
+        .filter(Boolean)
+        .join(" ") ||
+      email.split("@")[0];
+
+    let user = db
+      .prepare("SELECT * FROM users WHERE email=?")
+      .get(email);
+
+    if (!user) {
+      const unusablePassword = await bcrypt.hash(
+        crypto.randomBytes(32).toString("hex"),
+        12
+      );
+
+      const result = db
+        .prepare(
+          "INSERT INTO users(name,email,password_hash) VALUES(?,?,?)"
+        )
+        .run(name, email, unusablePassword);
+
+      user = {
+        id: result.lastInsertRowid,
+        name,
+        email
+      };
+    }
+
+    req.session.user = {
+      id: user.id,
+      name: user.name || name,
+      email: user.email
+    };
+
+    return res.json({
+      ok: true,
+      ...req.session.user
+    });
+
+  } catch (error) {
+    console.error("GRIM Google Sign-In error:", error);
+
+    return res.status(401).json({
+      error: "Google Sign-In failed."
+    });
+  }
+});
 async function notify(o){if(!process.env.SMTP_HOST||!process.env.STORE_OWNER_EMAIL)return;let t=nodemailer.createTransport({host:process.env.SMTP_HOST,port:+(process.env.SMTP_PORT||587),secure:process.env.SMTP_SECURE==="true",auth:{user:process.env.SMTP_USER,pass:process.env.SMTP_PASS}}),lines=o.items.map(x=>`${x.name} / ${x.color} / Size ${x.size||"M"} / Qty ${x.qty} / ₦${(x.price*x.qty).toLocaleString()}`).join("\n");await t.sendMail({from:process.env.SMTP_FROM||process.env.SMTP_USER,to:process.env.STORE_OWNER_EMAIL,subject:`NEW GRIM ORDER #${o.id}`,text:`Customer: ${o.name}\nEmail: ${o.email}\nPhone: ${o.phone}\nAddress: ${o.address}\n\n${lines}\n\nTOTAL ₦${o.total.toLocaleString()}`})}
 app.post("/api/payments/verify", async (req, res) => {
   try {
