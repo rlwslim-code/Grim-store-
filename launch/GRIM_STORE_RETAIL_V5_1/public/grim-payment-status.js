@@ -9,7 +9,7 @@
     return null;
   }
   function persist(value){for(const store of stores){try{store.setItem(KEY,JSON.stringify(value));return true}catch(error){}}return false}
-  const style=document.createElement('link');style.rel='stylesheet';style.href='/grim-payment-status.css?v=2';document.head.append(style);
+  const style=document.createElement('link');style.rel='stylesheet';style.href='/grim-payment-status.css?v=3';document.head.append(style);
   const root=document.createElement('div');root.className='grim-payment-status';
   root.innerHTML=`<button class="gps-launch" type="button" hidden>PAYMENT STATUS</button>
     <div class="gps-overlay" hidden><section class="gps-card" role="dialog" aria-modal="true" aria-labelledby="gps-title">
