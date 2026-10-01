@@ -62,8 +62,8 @@ function openBag(){E('bag')?.classList.add('open')}function closeBag(){E('bag')?
   }
 
   if(rules){
-    rules.style.display = registering ? 'flex' : 'none';
-  }
+  rules.style.display = 'none';
+}
 
   if(E('aFirst')) E('aFirst').required = registering;
   if(E('aLast')) E('aLast').required = registering;
@@ -202,10 +202,52 @@ function updateGrimPasswordRules(){
   );
 }
 
-grimPass?.addEventListener('input', updateGrimPasswordRules);
-grimConfirm?.addEventListener('input', updateGrimPasswordRules);
+function showGrimPasswordRules(){
+  const rules = E('passwordRules');
+
+  if(mode !== 'register' || !rules) return;
+
+  rules.style.display = 'flex';
+  rules.style.flexDirection = 'column';
+  rules.style.alignItems = 'flex-start';
+  rules.style.gap = '6px';
+  rules.style.margin = '10px 0 14px';
+  rules.style.fontSize = '13px';
+  rules.style.lineHeight = '1.4';
+}
+
+function hideGrimPasswordRules(){
+  setTimeout(() => {
+    const active = document.activeElement;
+
+    if(
+      active !== grimPass &&
+      active !== grimConfirm &&
+      E('passwordRules')
+    ){
+      E('passwordRules').style.display = 'none';
+    }
+  }, 100);
+}
+
+grimPass?.addEventListener('focus', showGrimPasswordRules);
+grimConfirm?.addEventListener('focus', showGrimPasswordRules);
+
+grimPass?.addEventListener('input', () => {
+  showGrimPasswordRules();
+  updateGrimPasswordRules();
+});
+
+grimConfirm?.addEventListener('input', () => {
+  showGrimPasswordRules();
+  updateGrimPasswordRules();
+});
+
+grimPass?.addEventListener('blur', hideGrimPasswordRules);
+grimConfirm?.addEventListener('blur', hideGrimPasswordRules);
 
 updateGrimPasswordRules();
+setMode('login');
 if(E('authForm')) E('authForm').onsubmit = async e => {
   e.preventDefault();
 
