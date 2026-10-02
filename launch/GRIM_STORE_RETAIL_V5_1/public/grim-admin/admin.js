@@ -535,8 +535,9 @@
 
 
   async function loginAdmin(
-    password
-  ) {
+  email,
+  password
+) {
     const message =
       $("adminLoginMessage");
 
@@ -562,10 +563,11 @@
             "POST",
 
           body: {
-            password
-          }
-        }
-      );
+  email,
+  password
+}
+ }
+);
 
 
       message?.classList.add(
@@ -2210,28 +2212,31 @@
         event.preventDefault();
 
 
-        const password =
-          safeString(
-            $("adminPassword")
-              ?.value
-          );
+        const email =
+  safeString(
+    $("adminEmail")?.value
+  )
+    .trim()
+    .toLowerCase();
 
+const password =
+  safeString(
+    $("adminPassword")?.value
+  );
 
-        if (!password) {
+if (!email || !password) {
+  setText(
+    $("adminLoginMessage"),
+    "Enter the admin email and password."
+  );
 
-          setText(
-            $("adminLoginMessage"),
-            "Enter the admin password."
-          );
+  return;
+}
 
-          return;
-        }
-
-
-        await loginAdmin(
-          password
-        );
-      }
+await loginAdmin(
+  email,
+  password
+);
     );
 
 
