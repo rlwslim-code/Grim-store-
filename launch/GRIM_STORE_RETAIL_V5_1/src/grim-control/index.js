@@ -16,6 +16,13 @@ import {
 import {
   installGrimAdmin
 } from "./admin.js";
+import {
+  installGrimProductAdmin
+} from "./grim-addons/product-admin.js";
+
+import {
+  installGrimSiteControls
+} from "./grim-addons/site-controls.js";
 function requestPath(req) {
   return String(
     req?.path ||
@@ -320,7 +327,8 @@ export function installGrimControl(app) {
     true;
  
   installGrimAdmin(app);
- 
+ installGrimProductAdmin(app);
+installGrimSiteControls(app);
   app.use(async (req, res, next) => {
     const path = requestPath(req);
 
