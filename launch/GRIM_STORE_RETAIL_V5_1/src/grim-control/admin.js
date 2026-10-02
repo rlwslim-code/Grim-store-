@@ -76,6 +76,7 @@ function secureCompare(
 
 function adminConfigured() {
   return Boolean(
+    process.env.ADMIN_EMAIL &&
     process.env.ADMIN_PASSWORD
   );
 }
@@ -947,28 +948,46 @@ export function installGrimAdmin(
       }
 
 
-      const password =
-        safeString(
-          req.body?.password
-        );
+      const email =
+  safeString(
+    req.body?.email
+  )
+    .trim()
+    .toLowerCase();
 
+const password =
+  safeString(
+    req.body?.password
+  );
 
-      if (
-        !secureCompare(
-          password,
-          process.env
-            .ADMIN_PASSWORD
-        )
-      ) {
+const expectedEmail =
+  safeString(
+    process.env.ADMIN_EMAIL
+  )
+    .trim()
+    .toLowerCase();
 
-        return res
-          .status(401)
-          .json({
-            ok: false,
-            error:
-              "Incorrect admin password."
-          });
-      }
+const emailOk =
+  secureCompare(
+    email,
+    expectedEmail
+  );
+
+const passwordOk =
+  secureCompare(
+    password,
+    process.env.ADMIN_PASSWORD
+  );
+
+if (!emailOk || !passwordOk) {
+  return res
+    .status(401)
+    .json({
+      ok: false,
+      error:
+        "Incorrect admin email or password."
+    });
+}
 
 
       req.session.admin =
