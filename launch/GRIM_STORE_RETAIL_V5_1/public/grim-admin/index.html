@@ -51,31 +51,43 @@
 
       <form id="adminLoginForm">
 
-        <label for="adminPassword">
-          ADMIN PASSWORD
-        </label>
+  <label for="adminEmail">
+    ADMIN EMAIL
+  </label>
 
-        <input
-          id="adminPassword"
-          type="password"
-          autocomplete="current-password"
-          placeholder="Enter password"
-          required
-        />
+  <input
+    id="adminEmail"
+    type="email"
+    autocomplete="username"
+    placeholder="Enter admin email"
+    required
+  />
 
-        <button
-          type="submit"
-          class="primary-button"
-        >
-          ENTER CONTROL CENTER
-        </button>
+  <label for="adminPassword">
+    ADMIN PASSWORD
+  </label>
 
-        <p
-          id="adminLoginMessage"
-          class="status-message"
-        ></p>
+  <input
+    id="adminPassword"
+    type="password"
+    autocomplete="current-password"
+    placeholder="Enter password"
+    required
+  />
 
-      </form>
+  <button
+    type="submit"
+    class="primary-button"
+  >
+    ENTER CONTROL CENTER
+  </button>
+
+  <p
+    id="adminLoginMessage"
+    class="status-message"
+  ></p>
+
+</form>
 
     </div>
   </section>
