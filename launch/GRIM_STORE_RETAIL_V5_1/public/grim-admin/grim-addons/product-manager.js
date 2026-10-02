@@ -1185,41 +1185,42 @@
   }
 
   function observeExistingAdmin() {
-    const container =
-      getContainer();
+  const container =
+    getContainer();
 
-    if (!container) {
-      setTimeout(
-        observeExistingAdmin,
-        500
-      );
+  if (!container) {
+    setTimeout(
+      observeExistingAdmin,
+      500
+    );
 
-      return;
-    }
+    return;
+  }
 
-    const observer =
-      new MutationObserver(
-        () => {
-          if (rendering) return;
+  const observer =
+    new MutationObserver(
+      () => {
+        if (rendering) return;
 
-          if (
-            container.dataset
-              .grimAddon !==
-            "product-manager"
-          ) {
-            scheduleRefresh();
-          }
+        const addonStillVisible =
+          container.querySelector(
+            ".grim-product-addon"
+          );
+
+        if (!addonStillVisible) {
+          scheduleRefresh();
         }
-      );
-
-    observer.observe(
-      container,
-      {
-        childList: true,
-        subtree: true
       }
     );
-  }
+
+  observer.observe(
+    container,
+    {
+      childList: true,
+      subtree: true
+    }
+  );
+}
 
   function start() {
     injectStyles();
