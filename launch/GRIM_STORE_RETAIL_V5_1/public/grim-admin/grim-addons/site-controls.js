@@ -23,7 +23,9 @@
     "/api/admin/store-settings";
 
   let loading = false;
-  let saving = false;
+let saving = false;
+let dirty = false;
+let lastSettings = null;
 
   function $(id) {
     return document.getElementById(id);
@@ -196,11 +198,15 @@
         );
 
       const settings =
-        result?.settings || {};
+  result?.settings || {};
 
-      applySettings(
-        settings
-      );
+lastSettings = settings;
+
+if (!dirty) {
+  applySettings(
+    settings
+  );
+}
 
       if (
         settings.setupRequired
@@ -274,7 +280,10 @@
             body: payload
           }
         );
+      lastSettings =
+  result?.settings || payload;
 
+dirty = false;
       applySettings(
         result?.settings ||
         payload
@@ -454,41 +463,55 @@
   }
 
   function start() {
-    installSaveButton();
+  installSaveButton();
 
-    bindNavigation();
+  bindNavigation();
 
-    watchAdminLogin();
+  watchAdminLogin();
 
-    if (
-      adminVisible() &&
-      storePanelVisible()
-    ) {
-      loadSettings();
-    }
-  }
+  const controls = [
+    $("settingOrdersOpen"),
+    $("settingAnnouncement"),
+    $("settingMaintenance"),
+    $("announcementText")
+  ];
 
-  window.GrimSiteControls = {
-    load:
-      loadSettings,
-
-    save:
-      saveSettings
-  };
-
-  if (
-    document.readyState ===
-    "loading"
-  ) {
-    document.addEventListener(
-      "DOMContentLoaded",
-      start,
-      {
-        once: true
+  controls.forEach(control => {
+    control?.addEventListener(
+      control?.tagName === "TEXTAREA"
+        ? "input"
+        : "change",
+      () => {
+        dirty = true;
       }
     );
-  } else {
-    start();
+  });
+
+  if (
+    adminVisible() &&
+    storePanelVisible()
+  ) {
+    loadSettings();
   }
 
-})();
+  /*
+   * The original GRIM dashboard redraws its old
+   * default settings during dashboard refreshes.
+   *
+   * When there are no unsaved admin changes,
+   * quietly restore the persisted GRIM settings.
+   */
+  setInterval(
+    () => {
+      if (
+        !dirty &&
+        !saving &&
+        adminVisible() &&
+        storePanelVisible()
+      ) {
+        loadSettings();
+      }
+    },
+    2000
+  );
+}
