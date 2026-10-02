@@ -13,6 +13,9 @@ import {
   trackSystemError
 } from "./activity.js";
 
+import {
+  installGrimAdmin
+} from "./admin.js";
 function requestPath(req) {
   return String(
     req?.path ||
@@ -315,7 +318,9 @@ export function installGrimControl(app) {
 
   app.locals.grimControlInstalled =
     true;
-
+ 
+  installGrimAdmin(app);
+ 
   app.use(async (req, res, next) => {
     const path = requestPath(req);
 
