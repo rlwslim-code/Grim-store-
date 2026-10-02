@@ -208,7 +208,6 @@ async function firstAvailableTable(
 ============================================================ */
 
 async function loadCustomers() {
-
   const {
     data,
     error
@@ -217,12 +216,6 @@ async function loadCustomers() {
       "customer_profiles"
     )
     .select("*")
-    .order(
-      "created_at",
-      {
-        ascending: false
-      }
-    )
     .limit(500);
 
   if (error) {
