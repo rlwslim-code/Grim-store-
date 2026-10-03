@@ -1,5 +1,5 @@
 import {createHmac, randomBytes, timingSafeEqual} from 'node:crypto';
-
+import { finalizePaidOrder } from './grim-paid-orders.js';
 // Added payment routes. Existing pages, catalog and legacy payment receipts stay in place.
 const PREFIX = /^GRIM-[a-f0-9]{32}$/;
 const COUNTRIES = new Set(['NG', 'US', 'GB', 'CA', 'GH', 'ZA', 'KE', 'AE']);
@@ -523,16 +523,49 @@ export function installGrimPayments(
           });
         }
 
-        return res.json({
-          ok: true,
-          verified: paid,
-          paystackPaid: paid,
-          orderVerified: paid,
-          reference,
-          amount: data.amount,
-          currency: data.currency,
-          status: data.status
-        });
+        let storedOrder = null;
+
+if (paid) {
+  try {
+    storedOrder =
+      await finalizePaidOrder({
+        order,
+        reference
+      });
+  } catch (error) {
+    console.error(
+      "[GRIM] paid order persistence:",
+      error?.message || error
+    );
+
+    return res.status(503).json({
+      ok: false,
+      verified: true,
+      paystackPaid: true,
+      orderVerified: true,
+      orderStored: false,
+      reference,
+      amount: data.amount,
+      currency: data.currency,
+      status: data.status,
+      error:
+        "Payment was received, but the order could not be synced automatically. Do not pay again. Keep this reference and contact GRIM Customer Care."
+    });
+  }
+}
+
+return res.json({
+  ok: true,
+  verified: paid,
+  paystackPaid: paid,
+  orderVerified: paid,
+  orderStored: paid ? true : false,
+  orderId: storedOrder?.id ?? null,
+  reference,
+  amount: data.amount,
+  currency: data.currency,
+  status: data.status
+});
       } catch (error) {
         return res
           .status(error.statusCode || 503)
