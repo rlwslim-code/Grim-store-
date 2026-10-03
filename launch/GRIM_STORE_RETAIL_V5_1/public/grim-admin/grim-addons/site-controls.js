@@ -501,19 +501,13 @@ dirty = false;
    * When there are no unsaved admin changes,
    * quietly restore the persisted GRIM settings.
    */
-  setInterval(
-    () => {
-      if (
-        !dirty &&
-        !saving &&
-        adminVisible() &&
-        storePanelVisible()
-      ) {
-        loadSettings();
-      }
-    },
-    2000
-  );
+    if (
+    adminVisible() &&
+    storePanelVisible()
+  ) {
+    loadSettings();
+  }
 }
+
 start();
 })();
