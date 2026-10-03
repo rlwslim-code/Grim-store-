@@ -1183,7 +1183,9 @@ tbody tr:hover {
   }
 
   .logout-button {
-    display: none;
+  display: block;
+  margin-top: 12px;
+}
   }
 
   .main {
