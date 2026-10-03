@@ -140,10 +140,12 @@ function cleanProduct(
       ).trim(),
 
     active:
-      toBoolean(
-        body.active,
-        true
-      ),
+  toBoolean(
+    body.active,
+    true
+  )
+    ? 1
+    : 0,
 
     sort_order:
       Number.isFinite(
