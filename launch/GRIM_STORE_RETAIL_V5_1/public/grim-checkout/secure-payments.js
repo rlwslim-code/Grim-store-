@@ -312,14 +312,20 @@
       }
 
 
-      paymentMessage(
-        "Opening secure Paystack checkout..."
-      );
+     paymentMessage(
+  "Opening secure Paystack checkout..."
+);
 
+try {
+  sessionStorage.setItem(
+    "grim_pending_payment_reference",
+    result.reference
+  );
+} catch (_) {}
 
-      window.location.assign(
-        result.authorizationUrl
-      );
+window.location.assign(
+  result.authorizationUrl
+); 
 
     } catch (error) {
       console.error(
