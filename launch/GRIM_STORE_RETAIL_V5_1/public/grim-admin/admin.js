@@ -2186,18 +2186,20 @@
 
 
     state.refreshTimer =
-      setInterval(() => {
+  setInterval(() => {
+    const storeControlOpen =
+      document
+        .getElementById("panel-store")
+        ?.classList.contains("active");
 
-        if (
-          document.visibilityState ===
-          "visible"
-        ) {
-
-          loadDashboard();
-        }
-
-      }, 15000);
-  }
+    if (
+      document.visibilityState ===
+        "visible" &&
+      !storeControlOpen
+    ) {
+      loadDashboard();
+    }
+  }, 15000);
 
 
   /* =========================================================
