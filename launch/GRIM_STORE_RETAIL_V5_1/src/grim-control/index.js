@@ -23,6 +23,9 @@ import {
 import {
   installGrimSiteControls
 } from "./grim-addons/site-controls.js";
+import {
+  installGrimAdminSession
+} from "./grim-addons/admin-session.js";
 function requestPath(req) {
   return String(
     req?.path ||
@@ -326,6 +329,7 @@ export function installGrimControl(app) {
   app.locals.grimControlInstalled =
     true;
  
+  installGrimAdminSession(app);
   installGrimAdmin(app);
  installGrimProductAdmin(app);
 installGrimSiteControls(app);
